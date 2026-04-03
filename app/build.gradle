@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
+
+android {
+    namespace 'com.ideku'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.ideku"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    
+    // Editor, Git, dan Terminal
+    implementation 'io.github.rosemoe.sora-editor:editor:0.21.1'
+    implementation 'io.github.rosemoe.sora-editor:language-java:0.21.1'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.5.0.202303070854-r'
+    implementation 'com.numetriclabz.terminalview:terminalview:1.0.0'
+    implementation 'org.slf4j:slf4j-nop:1.7.36'
+}
