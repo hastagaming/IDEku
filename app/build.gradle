@@ -4,12 +4,13 @@ plugins {
 }
 
 android {
-    namespace 'com.hastagaming.ideku'
+    namespace 'com.ideku'
     compileSdk 34
 
     defaultConfig {
         applicationId "com.hastagaming.ideku"
         minSdk 24
+        compileSdk 34
         targetSdk 34
         versionCode 1
         versionName "1.0"
