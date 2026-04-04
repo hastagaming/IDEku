@@ -10,7 +10,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url 'https://jitpack.io' } // Tempat TerminalView & library keren lainnya
+        // Gunakan URL lengkap dan pastikan tidak ada typo
+        maven { url 'https://jitpack.io' }
     }
 }
 
