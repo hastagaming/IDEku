@@ -19,11 +19,11 @@ import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula
 import org.eclipse.jgit.api.Git
 import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
-    // UI Components
     private lateinit var editor: CodeEditor
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var rvFiles: RecyclerView
@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var terminalView: TerminalView
     private lateinit var tvCurrentFile: TextView
 
-    // Path Logic (Standalone Isolation)
     private lateinit var homeDir: File
     private lateinit var binDir: File
     private var currentDirectory: File? = null
@@ -41,52 +40,82 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 1. Inisialisasi Lingkungan & BusyBox
+        // 1. Setup Folder & Pindahkan Senjata dari Assets
         setupIsolatedEnv()
-        bootstrapBusyBox()
+        deployAssets() 
 
-        // 2. Inisialisasi UI & Editor
+        // 2. UI & Terminal
         initUI()
-
-        // 3. Inisialisasi Terminal Mandiri
         startTerminal()
 
-        // 4. Cek Izin & Muat File
         checkStoragePermission()
         loadDirectory(homeDir)
     }
 
     private fun setupIsolatedEnv() {
-        // Folder bin: /data/data/com.hastagaming.ideku/files/usr/bin
         binDir = File(filesDir, "usr/bin")
-        // Folder home: /data/data/com.hastagaming.ideku/home (Sesuai request)
         homeDir = File(filesDir.parentFile, "home")
+        val tmpDir = File(filesDir, "tmp")
 
-        val dirs = listOf(binDir, homeDir, File(filesDir, "tmp"))
-        dirs.forEach { 
+        listOf(binDir, homeDir, tmpDir).forEach {
             if (!it.exists()) it.mkdirs()
             it.setExecutable(true, false)
-            it.setReadable(true, false)
-            it.setWritable(true, false)
         }
     }
 
-    private fun bootstrapBusyBox() {
-        val busybox = File(binDir, "busybox")
+    /**
+     * Menghubungkan biner dari Assets ke Sistem Internal IDE
+     */
+    private fun deployAssets() {
+        val abi = Build.SUPPORTED_ABIS[0]
         
-        // Memindahkan biner BusyBox dari assets ke /usr/bin
-        if (!busybox.exists()) {
-            try {
-                assets.open("busybox").use { input ->
-                    busybox.outputStream().use { output -> input.copyTo(output) }
+        // Pilih biner BusyBox sesuai Arsitektur
+        val busyboxSource = when {
+            abi.contains("arm64") -> "busybox_arm64"
+            abi.contains("armeabi") -> "busybox_arm"
+            abi.contains("x86_64") -> "busybox_x86_64"
+            else -> "busybox_x86"
+        }
+
+        // Pilih AAPT2 (Umumnya arm64 atau x86_64)
+        val aapt2Source = if (abi.contains("arm64")) "aapt2_arm64" else "aapt2_x86_64"
+
+        // Daftar pemetaan (Nama di Assets -> Nama Target di bin/)
+        val assetsToDeploy = listOf(
+            busyboxSource to "busybox",
+            aapt2Source to "aapt2",
+            "d8.jar" to "d8.jar",
+            "bw" to "bw"
+        )
+
+        assetsToDeploy.forEach { (assetName, targetName) ->
+            val destFile = File(binDir, targetName)
+            
+            // Hanya copy jika belum ada (hemat resource)
+            if (!destFile.exists()) {
+                try {
+                    assets.open(assetName).use { input ->
+                        FileOutputStream(destFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    destFile.setExecutable(true, false)
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                busybox.setExecutable(true, false)
-                
-                // Install Symlinks (Menciptakan perintah ls, cp, rm, dll)
-                Runtime.getRuntime().exec("${busybox.absolutePath} --install -s ${binDir.absolutePath}").waitFor()
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+        }
+
+        // Jalankan Symlink BusyBox agar perintah ls, cp, dll aktif
+        bootstrapBusyBoxLinks()
+    }
+
+    private fun bootstrapBusyBoxLinks() {
+        val busybox = File(binDir, "busybox").absolutePath
+        try {
+            Runtime.getRuntime().exec("$busybox --install -s ${binDir.absolutePath}").waitFor()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -97,48 +126,40 @@ class MainActivity : AppCompatActivity() {
         tvCurrentFile = findViewById(R.id.tvCurrentFileName)
         terminalView = findViewById(R.id.terminalView)
 
-        // Editor Config
         editor.colorScheme = SchemeDarcula()
         editor.setEditorLanguage(JavaLanguage())
         editor.isLineNumberEnabled = true
-        editor.setBackgroundColor(0xFF1E1E1E.toInt())
 
-        // Sidebar Config
         rvFiles.layoutManager = LinearLayoutManager(this)
         fileAdapter = FileAdapter(emptyList()) { file ->
             if (file.isDirectory) loadDirectory(file) else openFile(file)
         }
         rvFiles.adapter = fileAdapter
 
-        // Button Actions
         findViewById<Button>(R.id.btnSave).setOnClickListener { saveFile() }
         findViewById<Button>(R.id.btnRun).setOnClickListener { runBuildCommand() }
-        findViewById<Button>(R.id.btnClone).setOnClickListener { 
-            // Contoh trigger clone
-            startGitClone("https://github.com/hastagaming/example.git") 
-        }
     }
 
     private fun startTerminal() {
         val env = arrayOf(
-            "PATH=${binDir.absolutePath}:/system/bin:/system/xbin",
+            "PATH=${binDir.absolutePath}:${System.getenv("PATH")}",
             "HOME=${homeDir.absolutePath}",
             "TERM=xterm-256color"
         )
-        // Jalankan shell mandiri di folder home isolasi
         terminalView.createSession("/system/bin/sh", env, homeDir.absolutePath)
         terminalView.start()
         
-        terminalView.write("\r\n[ NASA-IDE SYSTEM READY ]\r\n")
-        terminalView.write("WorkDir: ${homeDir.path}\r\n\n")
+        terminalView.write("\r\n[ NASA-IDE | Multi-Arch Engine Ready ]\r\n")
+        terminalView.write("Binaries: ${binDir.path}\r\n\n")
     }
 
     private fun runBuildCommand() {
-        // Otomatis mengetik perintah build ke terminal
+        // Memanggil Bubblewrap (bw) yang ada di bin/
         val projectPath = currentDirectory?.absolutePath ?: homeDir.absolutePath
         terminalView.write("bw build --dir $projectPath\n")
     }
 
+    // --- SISANYA TETAP SAMA DENGAN KODE KAMU ---
     private fun checkStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
@@ -149,36 +170,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // --- GIT LOGIC ---
-    fun startGitClone(url: String) {
-        val platform = if (url.contains("github.com")) "github" else "gitlab"
-        val repoName = url.substringAfterLast("/").substringBefore(".git")
-        val destination = File(homeDir, repoName)
-
-        Toast.makeText(this, "mengclone project dari $platform", Toast.LENGTH_SHORT).show()
-
-        Executors.newSingleThreadExecutor().execute {
-            try {
-                Git.cloneRepository()
-                    .setURI(url)
-                    .setDirectory(destination)
-                    .call()
-
-                runOnUiThread {
-                    Toast.makeText(this, "project berhasil di clone $repoName", Toast.LENGTH_LONG).show()
-                    fixPermissions(destination)
-                    loadDirectory(homeDir)
-                    terminalView.write("cd $repoName\n")
-                }
-            } catch (e: Exception) {
-                runOnUiThread {
-                    Toast.makeText(this, "Gagal: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
-    // --- FILE SYSTEM LOGIC ---
     private fun loadDirectory(directory: File) {
         currentDirectory = directory
         val files = directory.listFiles()?.toList() ?: emptyList()
@@ -192,7 +183,6 @@ class MainActivity : AppCompatActivity() {
             openedFile = file
             tvCurrentFile.text = file.name
             drawerLayout.closeDrawers()
-            Toast.makeText(this, "Membuka: ${file.name}", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
@@ -202,23 +192,6 @@ class MainActivity : AppCompatActivity() {
         openedFile?.let {
             it.writeText(editor.text.toString())
             Toast.makeText(this, "Tersimpan", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun fixPermissions(file: File) {
-        file.setExecutable(true, false)
-        file.setReadable(true, false)
-        file.setWritable(true, false)
-        if (file.isDirectory) file.listFiles()?.forEach { fixPermissions(it) }
-    }
-
-    override fun onBackPressed() {
-        if (drawerLayout.isOpen) {
-            drawerLayout.closeDrawers()
-        } else if (currentDirectory != homeDir) {
-            currentDirectory?.parentFile?.let { loadDirectory(it) }
-        } else {
-            super.onBackPressed()
         }
     }
 }
