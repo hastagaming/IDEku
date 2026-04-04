@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var rvFiles: RecyclerView
     private lateinit var fileAdapter: FileAdapter
-    private lateinit var terminalView: TerminalView
+    private lateinit var terminalWebView: WebView
     private lateinit var tvCurrentFile: TextView
 
     private lateinit var homeDir: File
@@ -124,7 +124,11 @@ class MainActivity : AppCompatActivity() {
         drawerLayout = findViewById(R.id.drawerLayout)
         rvFiles = findViewById(R.id.rvFiles)
         tvCurrentFile = findViewById(R.id.tvCurrentFileName)
-        terminalView = findViewById(R.id.terminalView)
+        terminalWebView = findViewById(R.id.terminalWebView)
+        
+        terminalWebView = findViewById(R.id.terminalWebView)
+        terminalWebView.settings.javaScriptEnabled = true
+
 
         editor.colorScheme = SchemeDarcula()
         editor.setEditorLanguage(JavaLanguage())
@@ -149,7 +153,7 @@ class MainActivity : AppCompatActivity() {
         terminalView.createSession("/system/bin/sh", env, homeDir.absolutePath)
         terminalView.start()
         
-        terminalView.write("\r\n[ NASA-IDE | Multi-Arch Engine Ready ]\r\n")
+        terminalView.write("\r\n[ IDEku | System Ready ]\r\n")
         terminalView.write("Binaries: ${binDir.path}\r\n\n")
     }
 

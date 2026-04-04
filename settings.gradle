@@ -10,8 +10,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Gunakan URL lengkap dan pastikan tidak ada typo
-        maven { url 'https://jitpack.io' }
+        // Hapus JitPack karena sedang bermasalah 401
     }
 }
 
