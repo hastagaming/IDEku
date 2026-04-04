@@ -47,5 +47,5 @@ dependencies {
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
 
     // TerminalView (Pastikan JitPack sudah ada di settings.gradle)
-    implementation 'com.github.hi-manshu:TerminalView:1.1.0'
+    implementation 'com.termux:termux-view:0.118.0'
 }

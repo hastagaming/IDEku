@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.numetriclabz.terminalview.TerminalView
+import com.termux.view.TerminalView
 import io.github.rosemoe.sora.langs.java.JavaLanguage
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.SchemeDarcula
