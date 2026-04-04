@@ -1,28 +1,34 @@
 plugins {
     id 'com.android.application'
-    id 'kotlin-android'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
-    namespace 'com.ideku'
+    namespace 'com.hastagaming.ideku'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.ideku"
+        applicationId "com.hastagaming.ideku"
         minSdk 24
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
             minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
     }
 }
 
@@ -30,11 +36,15 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
-    
-    // Editor, Git, dan Terminal
-    implementation 'io.github.rosemoe.sora-editor:editor:0.21.1'
-    implementation 'io.github.rosemoe.sora-editor:language-java:0.21.1'
-    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.5.0.202303070854-r'
-    implementation 'com.numetriclabz.terminalview:terminalview:1.0.0'
-    implementation 'org.slf4j:slf4j-nop:1.7.36'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    // Editor Sora & Language Support
+    implementation 'io.github.Rosemoe.sora-editor:editor:0.21.1'
+    implementation 'io.github.Rosemoe.sora-editor:language-java:0.21.1'
+
+    // Git Library (JGit)
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
+
+    // TerminalView (Pastikan JitPack sudah ada di settings.gradle)
+    implementation 'com.github.hi-manshu:TerminalView:1.1.0'
 }
