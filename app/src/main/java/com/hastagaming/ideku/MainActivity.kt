@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.termux.view.TerminalView
 import io.github.rosemoe.sora.langs.java.JavaLanguage
 import io.github.rosemoe.sora.widget.CodeEditor
-import io.github.rosemoe.sora.widget.schemes.SchemeDarcula
+import io.github.rosemoe.sora.widget.schemes.SchemeEclipse
 import org.eclipse.jgit.api.Git
 import java.io.File
 import java.io.FileOutputStream
@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
         terminalWebView.settings.javaScriptEnabled = true
 
 
-        editor.colorScheme = SchemeDarcula()
+        editor.colorScheme = SchemeEclipse()
         editor.setEditorLanguage(JavaLanguage())
         editor.isLineNumberEnabled = true
 

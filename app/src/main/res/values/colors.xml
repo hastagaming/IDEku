@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ubuntu_bg_beige">#E6DDCF</color>
+    <color name="ubuntu_header_brown">#8A5638</color>
+    <color name="ubuntu_accent_orange">#F0833B</color>
+    <color name="ubuntu_drawer_bg">#CDC5BB</color>
+    <color name="ubuntu_text_main">#000000</color>
+    <color name="ubuntu_text_header">#FFFFFF</color>
+    <color name="ubuntu_text_inactive">#666666</color>
+    <color name="ubuntu_border_dark">#5E5148</color>
+    <color name="ubuntu_border_light">#FFF9F0</color>
+</resources>

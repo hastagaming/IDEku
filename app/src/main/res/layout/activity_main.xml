@@ -6,7 +6,7 @@
     android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
+    android:background="#E6DDCF" 
     tools:context=".MainActivity">
 
     <LinearLayout
@@ -17,18 +17,16 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#1E1E1E"
+            android:background="#8A5638"
             android:orientation="horizontal"
             android:padding="8dp"
             android:gravity="center_vertical"
-            android:elevation="4dp">
-
-            <TextView
+            android:elevation="0dp"> <TextView
                 android:id="@+id/tvCurrentFileName"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="IDEku"
+                android:text="main.java"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp"
                 android:textStyle="bold"
@@ -42,9 +40,10 @@
                 android:layout_height="36dp"
                 android:text="SAVE"
                 android:textSize="10sp"
-                android:backgroundTint="#4CAF50"
+                android:backgroundTint="#F0833B"
                 android:layout_marginEnd="4dp"
-                android:textColor="#FFFFFF"/>
+                android:textColor="#FFFFFF"
+                app:cornerRadius="2dp"/>
 
             <Button
                 android:id="@+id/btnClone"
@@ -52,9 +51,10 @@
                 android:layout_height="36dp"
                 android:text="CLONE"
                 android:textSize="10sp"
-                android:backgroundTint="#FF9800"
+                android:backgroundTint="#F0833B"
                 android:layout_marginEnd="4dp"
-                android:textColor="#FFFFFF"/>
+                android:textColor="#FFFFFF"
+                app:cornerRadius="2dp"/>
 
             <Button
                 android:id="@+id/btnRun"
@@ -62,8 +62,9 @@
                 android:layout_height="36dp"
                 android:text="RUN"
                 android:textSize="10sp"
-                android:backgroundTint="#2196F3"
-                android:textColor="#FFFFFF"/>
+                android:backgroundTint="#F0833B"
+                android:textColor="#FFFFFF"
+                app:cornerRadius="2dp"/>
         </LinearLayout>
 
         <io.github.rosemoe.sora.widget.CodeEditor
@@ -74,22 +75,22 @@
 
         <View
             android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#333333" />
+            android:layout_height="2dp"
+            android:background="#5E5148" />
 
-        <WebView
-            android:id="@+id/terminalWebView"
+        <com.termux.view.TerminalView
+            android:id="@+id/terminalView"
             android:layout_width="match_parent"
             android:layout_height="220dp"
             android:background="#000000" />
- 
+
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="#1E1E1E"
+        android:background="#CDC5BB"
         android:orientation="vertical"
         android:clickable="true"
         android:focusable="true">
@@ -98,8 +99,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="16dp"
-            android:text="EXPLORER"
-            android:textColor="#808080"
+            android:text="EXPLORER (NAUTILUS)"
+            android:textColor="#333333"
             android:textSize="12sp"
             android:letterSpacing="0.1"
             android:textStyle="bold" />
@@ -108,7 +109,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginHorizontal="16dp"
-            android:background="#333333" />
+            android:background="#5E5148" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvFiles"
