@@ -1,19 +1,13 @@
-pluginManagement {
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-    }
-}
+// settings.gradle
 dependencyResolutionManagement {
-    // Ubah ke PREFER_SETTINGS agar lebih fleksibel
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' } // Pastikan ini ada untuk menarik library Termux
     }
 }
-
+	
 rootProject.name = "IDEku"
 include ':app'
 include ':terminal-view-lib'

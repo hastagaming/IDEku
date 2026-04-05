@@ -13,8 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.termux.view.TerminalView
-import com.termux.terminal.TerminalSession
 import io.github.rosemoe.sora.langs.java.JavaLanguage
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.SchemeEclipse
@@ -29,10 +27,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var rvFiles: RecyclerView
     private lateinit var fileAdapter: FileAdapter
-    private lateinit var terminalView: TerminalView
-    private var terminalSession: TerminalSession? = null
     private lateinit var tvCurrentFile: TextView
-
+    private lateinit var terminalView: TerminalView
     private lateinit var homeDir: File
     private lateinit var binDir: File
     private var currentDirectory: File? = null
@@ -126,7 +122,6 @@ class MainActivity : AppCompatActivity() {
         drawerLayout = findViewById(R.id.drawerLayout)
         rvFiles = findViewById(R.id.rvFiles)
         tvCurrentFile = findViewById(R.id.tvCurrentFileName)
-        terminalView = findViewById(R.id.terminalView)
 
         editor.colorScheme = SchemeEclipse()
         editor.setEditorLanguage(JavaLanguage())
@@ -140,51 +135,24 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnSave).setOnClickListener { saveFile() }
         findViewById<Button>(R.id.btnRun).setOnClickListener { runBuildCommand() }
-        }
+    }
 
-        private fun startTerminal() {
-        // Persiapkan Environment Variable
+    private fun startTerminal() {
         val env = arrayOf(
             "PATH=${binDir.absolutePath}:${System.getenv("PATH")}",
             "HOME=${homeDir.absolutePath}",
             "TERM=xterm-256color"
         )
-
-        // 1. Inisialisasi Sesi PTY
-        terminalSession = TerminalSession(
-            "/system/bin/sh",           // Shell yang dijalankan
-            homeDir.absolutePath,       // Lokasi awal (Home)
-            null,                       // Argumen tambahan
-            env,                        // Environment kita
-            object : TerminalSession.TerminalSessionClient {
-                override fun onTextChanged(session: TerminalSession) {
-                    // Update tampilan setiap ada teks baru dari shell
-                    terminalView.onScreenUpdated()
-                }
-                override fun onSessionFinished(session: TerminalSession) {
-                    // Opsional: Logika jika terminal ditutup
-                }
-                override fun onClipboardText(session: TerminalSession, text: String) {}
-                override fun onBell(session: TerminalSession) {}
-                override fun onColorsChanged(session: TerminalSession) {}
-                override fun onTitleChanged(session: TerminalSession) {}
-            }
-        )
-
-        // 2. Hubungkan Sesi ke View agar muncul di layar
-        terminalView.attachSession(terminalSession)
         
-        // 3. Kirim pesan selamat datang ke PTY
-        terminalSession?.write("\r\n[ IDEku | System Ready ]\r\n")
-        terminalSession?.write("Binaries: ${binDir.path}\r\n\n")
+        terminalView.write("\r\n[ IDEku | System Ready ]\r\n")
+        terminalView.write("jalankan command bro")
+        terminalView.write("Binaries: ${binDir.path}\r\n\n")
     }
 
-
-        private fun runBuildCommand() {
+    private fun runBuildCommand() {
+        // Memanggil Bubblewrap (bw) yang ada di bin/
         val projectPath = currentDirectory?.absolutePath ?: homeDir.absolutePath
-        // Mengirim perintah ke PTY (seperti mengetik langsung di terminal)
-        // \n di akhir sangat penting agar perintah langsung dieksekusi (Enter)
-        terminalSession?.write("bw build --dir $projectPath\n")
+        terminalView.write("bw build --dir $projectPath\n")
     }
 
     // --- SISANYA TETAP SAMA DENGAN KODE KAMU ---
@@ -219,7 +187,7 @@ class MainActivity : AppCompatActivity() {
     fun saveFile() {
         openedFile?.let {
             it.writeText(editor.text.toString())
-            Toast.makeText(this, "Berhasil Tersimpan", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Tersimpan", Toast.LENGTH_SHORT).show()
         }
     }
 }

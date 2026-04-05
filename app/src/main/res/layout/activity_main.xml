@@ -79,11 +79,9 @@
             android:background="#5E5148" />
 
         <com.termux.view.TerminalView
-            android:id="@+id/terminalView"
-            android:layout_width="match_parent"
-            android:layout_height="220dp"
-            android:background="#000000" />
-
+           android:id="@+id/terminalView"
+           android:layout_width="match_parent"
+           android:layout_height="match_parent" />
     </LinearLayout>
 
     <LinearLayout
