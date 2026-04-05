@@ -1,13 +1,18 @@
-// settings.gradle
+pluginManagement {
+    repositories {
+        google()      // <--- WAJIB: Tambahkan ini agar plugin Android ditemukan
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
+        google()      // <--- Pastikan ini juga ada untuk library biasa
         mavenCentral()
-        maven { url 'https://jitpack.io' } // Pastikan ini ada untuk menarik library Termux
+        maven { url 'https://jitpack.io' } // Untuk TerminalView Termux
     }
 }
-	
+
 rootProject.name = "IDEku"
 include ':app'
-include ':terminal-view-lib'
