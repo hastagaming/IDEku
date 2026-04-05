@@ -1,0 +1,28 @@
+# Folder Build (Sangat Penting!)
+build/
+app/build/
+.gradle/
+/local.properties
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# Folder IDE & Cache
+.idea/
+*.iml
+*.iws
+.DS_Store
+
+# File Biner & Output
+*.apk
+*.aar
+*.ap_
+*.dex
+
+# Log & Temporary
+*.log
+captures/
+
+# Jika Navigator punya kunci tanda tangan aplikasi (Keystore)
+*.jks
+*.keystore
