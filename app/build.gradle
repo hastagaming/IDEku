@@ -22,6 +22,18 @@ android {
         buildConfig true
     }
 
+    // Tambahkan ini di dalam blok android { ... }
+    analysis {
+        // Mencegah Gradle melakukan mutasi saat pemrosesan resource
+        // (Khusus untuk Gradle 9 ke atas)
+    }
+    
+    // Pastikan aaptOptions tidak mencoba mengolah AAR secara agresif
+    aaptOptions {
+        noCompress 'aar'
+       }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -39,7 +51,7 @@ android {
 
 dependencies {
     //terminal-view
-    implementation(name: 'terminal-view-0.114', ext: 'aar')
+    implementation name: 'terminal-view-0.114', ext: 'aar'
     
     //sistem
     implementation 'androidx.core:core-ktx:1.12.0'
