@@ -39,7 +39,7 @@ android {
 
 dependencies {
     //terminal-view
-    implementation name: 'terminal-view-0.114'
+    implementation(name: 'terminal-view-0.114', ext: 'aar')
     
     //sistem
     implementation 'androidx.core:core-ktx:1.12.0'
