@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "IDEku"
 include ':app'
-include ':terminal-view-lib' // Tambahkan ini
+include ':terminal-view-lib'

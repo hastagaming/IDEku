@@ -44,6 +44,7 @@ android {
 }
 
 dependencies {
+     // Gunakan referensi modul
     implementation project(':terminal-view-lib')
 
     // Library lainnya tetap (Hapus baris implementation files lama!)
