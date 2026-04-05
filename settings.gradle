@@ -6,12 +6,14 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // Ubah ke PREFER_SETTINGS agar lebih fleksibel
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
-        // HAPUS FLATDIR DARI SINI
     }
 }
+
 rootProject.name = "IDEku"
 include ':app'
+include ':terminal-view-lib' // Tambahkan ini
