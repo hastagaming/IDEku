@@ -10,7 +10,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Hapus JitPack karena sedang bermasalah 401
+        // Daftarkan folder libs sebagai repositori lokal
+        flatDir {
+            dirs 'app/libs'
+        }
     }
 }
 
