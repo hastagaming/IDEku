@@ -5,15 +5,14 @@ plugins {
 
 android {
     namespace 'com.hastagaming.ideku'
-    compileSdk 34
+    compileSdk 34 // Cukup di sini saja
 
     defaultConfig {
         applicationId "com.hastagaming.ideku"
         minSdk 24
-        compileSdk 34
         targetSdk 34
         versionCode 1
-        versionName "1.0"
+        versionName "1.0-Retro"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -22,16 +21,9 @@ android {
         buildConfig true
     }
 
-    // Tambahkan ini di dalam blok android { ... }
-    analysis {
-        // Mencegah Gradle melakukan mutasi saat pemrosesan resource
-        // (Khusus untuk Gradle 9 ke atas)
-    }
-    
-    // Pastikan aaptOptions tidak mencoba mengolah AAR secara agresif
+    // Blok aaptOptions diletakkan dengan benar
     aaptOptions {
         noCompress 'aar'
-       }
     }
 
     buildTypes {
@@ -40,20 +32,22 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = '17'
     }
 }
 
 dependencies {
-    //terminal-view
-    implementation name: 'terminal-view-0.114', ext: 'aar'
-    
-    //sistem
+    // Terminal View (Memanggil dari flatDir di settings.gradle)
+    implementation(name: 'terminal-view-0.114', ext: 'aar')
+
+    // Sistem Inti
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
@@ -65,5 +59,4 @@ dependencies {
 
     // Git Library (JGit)
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r'
-
 }
