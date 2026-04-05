@@ -10,10 +10,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Gunakan jalur absolut yang dipahami GitHub Runner
-        flatDir {
-            dirs 'app/libs'
-        }
+        // HAPUS FLATDIR DARI SINI
     }
 }
 rootProject.name = "IDEku"

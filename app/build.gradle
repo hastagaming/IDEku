@@ -45,7 +45,7 @@ android {
 
 dependencies {
     // Terminal View (Memanggil dari flatDir di settings.gradle)
-    implementation(name: 'terminal-view-0.114', ext: 'aar')
+    implementation(files("libs/terminal-view-0.114.aar"))
 
     // Sistem Inti
     implementation 'androidx.core:core-ktx:1.12.0'
