@@ -44,7 +44,10 @@ android {
 }
 
 dependencies {
-     // Gunakan referensi modul
+     // Tambahkan baris ini di paling atas untuk mengunci versi Kotlin
+    implementation platform("org.jetbrains.kotlin:kotlin-bom:1.9.22")
+     
+    // Gunakan referensi modul
     implementation project(':terminal-view-lib')
 
     // Library lainnya tetap (Hapus baris implementation files lama!)
