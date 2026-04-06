@@ -44,9 +44,16 @@ android {
 }
 
 dependencies {
-     // Library Terminal View dengan dukungan PTY
-    implementation project(':terminal-view')
-    implementation project(':terminal-emulator')
+     if (findProject(':terminal-view') != null) {
+        // JALUR 1: Self-Hosted (Termux-App Core Lokal)
+        implementation project(':terminal-view')
+        implementation project(':terminal-emulator')
+    } else {
+        // JALUR 2: JitPack (Cadangan jika folder lokal dihapus)
+        // Kita gunakan termux-view lama atau repo hasil fork sendiri di JitPack
+        implementation 'com.github.termux:termux-view:v0.118.0'
+    }
+
     implementation "androidx.annotation:annotation:1.7.0"
 
      // Tambahkan baris ini di paling atas untuk mengunci versi Kotlin
