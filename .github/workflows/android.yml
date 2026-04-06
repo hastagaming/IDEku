@@ -18,20 +18,26 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Emergency Module Patch
+      - name: Auto-Fetch & Patch Termux Modules
         run: |
-          # Kita ambil versi asli terminal-view langsung dari sumber Termux
+          # 1. Ambil modul asli
           git clone --depth 1 https://github.com/termux/termux-app.git temp_termux
-          
-          # Hapus folder terminal-view-lib yang "kosong" itu
-          rm -rf terminal-view-lib terminal-view
-          
-          # Salin folder terminal-view yang asli (berisi source code, bukan .aar)
+          rm -rf terminal-view terminal-emulator
           cp -r temp_termux/terminal-view .
           cp -r temp_termux/terminal-emulator .
-          
-          # Bersihkan sampah
           rm -rf temp_termux
+
+          # 2. PATCH: Hapus minSdk dari Manifest agar tidak bentrok
+          sed -i '/android:minSdkVersion/d' terminal-view/src/main/AndroidManifest.xml
+          sed -i '/android:targetSdkVersion/d' terminal-view/src/main/AndroidManifest.xml
+          
+          # 3. PATCH: Tambahkan Namespace ke build.gradle modul (PENTING!)
+          echo "android.namespace = 'com.termux.view'" >> terminal-view/build.gradle
+          echo "android.namespace = 'com.termux.terminal'" >> terminal-emulator/build.gradle
+
+          # 4. Sinkronisasi SDK (Samakan dengan IDEku)
+          sed -i 's/compileSdkVersion.*/compileSdkVersion 34/' terminal-view/build.gradle
+          sed -i 's/targetSdkVersion.*/targetSdkVersion 34/' terminal-view/build.gradle
 
       - name: Grant Execute Permissions (Global)
         # Kita beri izin ke SEMUA file .sh dan gradlew di semua subfolder
