@@ -25,3 +25,6 @@ rootProject.name = "IDEku" // Sesuaikan dengan nama projectmu
 include ':app'
 include ':terminal-view'
 include ':terminal-emulator'
+
+project(':terminal-view').projectDir = new File(rootDir, 'terminal-view')
+project(':terminal-emulator').projectDir = new File(rootDir, 'terminal-emulator')
