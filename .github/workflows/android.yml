@@ -18,27 +18,42 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Auto-Fetch & Bottom-Patch Modules
+      - name: Auto-Fetch & Clean Overwrite Modules
         run: |
-          # 1. Ambil modul asli
+          # 1. Ambil modul asli dari markas Termux
           git clone --depth 1 https://github.com/termux/termux-app.git temp_termux
           rm -rf terminal-view terminal-emulator
           cp -r temp_termux/terminal-view .
           cp -r temp_termux/terminal-emulator .
           rm -rf temp_termux
 
-          # 2. PATCH Manifest: Hapus baris SDK
+          # 2. Hapus baris SDK di Manifest yang sering bentrok
           sed -i '/sdkVersion/d' terminal-view/src/main/AndroidManifest.xml
           sed -i '/sdkVersion/d' terminal-emulator/src/main/AndroidManifest.xml
 
-          # 3. PATCH build.gradle: Hapus baris SDK lama (compile/min/target)
-          sed -i '/compileSdkVersion/d; /minSdkVersion/d; /targetSdkVersion/d' terminal-view/build.gradle
-          sed -i '/compileSdkVersion/d; /minSdkVersion/d; /targetSdkVersion/d' terminal-emulator/build.gradle
+          # 3. OVERWRITE TOTAL: build.gradle terminal-emulator
+          cat << 'EOF' > terminal-emulator/build.gradle
+          apply plugin: 'com.android.library'
+          android {
+              namespace 'com.termux.terminal'
+              compileSdk 34
+              defaultConfig { minSdk 24 }
+          }
+          EOF
 
-          # 4. APPEND build.gradle: Suntik konfigurasi baru di PALING BAWAH file
-          # Cara ini 100% aman karena dieksekusi setelah semua plugin & dependensi terbaca
-          echo "android { namespace 'com.termux.view'; compileSdk 34; defaultConfig { minSdk 24 } }" >> terminal-view/build.gradle
-          echo "android { namespace 'com.termux.terminal'; compileSdk 34; defaultConfig { minSdk 24 } }" >> terminal-emulator/build.gradle
+          # 4. OVERWRITE TOTAL: build.gradle terminal-view
+          cat << 'EOF' > terminal-view/build.gradle
+          apply plugin: 'com.android.library'
+          android {
+              namespace 'com.termux.view'
+              compileSdk 34
+              defaultConfig { minSdk 24 }
+          }
+          dependencies {
+              // Menyambungkan view ke emulator
+              implementation project(':terminal-emulator')
+          }
+          EOF
 
       - name: Grant Execute Permissions (Global)
         # Kita beri izin ke SEMUA file .sh dan gradlew di semua subfolder
