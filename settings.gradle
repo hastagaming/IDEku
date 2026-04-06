@@ -23,10 +23,9 @@ dependencyResolutionManagement {
 
 rootProject.name = "IDEku"
 
+include ':terminal-emulator' // Daftar ini dulu
+include ':terminal-view'     // Baru daftar ini
 include ':app'
-include ':terminal-view'
-include ':terminal-emulator'
 
-// Paksa Gradle menunjuk folder hasil clone tadi
 project(':terminal-view').projectDir = new File(rootDir, 'terminal-view')
 project(':terminal-emulator').projectDir = new File(rootDir, 'terminal-emulator')
