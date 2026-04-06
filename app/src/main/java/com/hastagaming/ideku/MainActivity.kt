@@ -54,6 +54,30 @@ class MainActivity : AppCompatActivity() {
         loadDirectory(homeDir)
     }
 
+    private fun startTerminalWithBootstrap() {
+    // 1. Jalankan Service Notifikasi
+    val serviceIntent = Intent(this, IDEkuService::class.java)
+    startService(serviceIntent)
+
+    // 2. Tampilkan Loading Bootstrap di Terminal
+    terminalView.setTextSize(14)
+    val session = TerminalSession("/system/bin/sh", workingDir, null, env, sessionClient)
+    terminalView.attachSession(session)
+
+    // Simulasi Loading TUI
+    session.write("\r\n \u001b[32m[#] Booting IDEku Terminal...\u001b[0m\r\n")
+    session.write(" \u001b[33m[*] Loading System...\u001b[0m\r\n")
+    
+    // Delay sebentar agar estetik
+    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+        // Bersihkan layar dan munculkan tanda [1]
+        session.write("\u001b[H\u001b[2J") // Clear screen ANSI
+        session.write("\u001b[36m[1] IDEku Ready, Commander Nasa!\u001b[0m\r\n")
+        session.write("hastagaming@ideku:~$ ")
+       }, 1500)
+   }
+
+
     private fun setupIsolatedEnv() {
         binDir = File(filesDir, "usr/bin")
         homeDir = File(filesDir.parentFile, "home")

@@ -9,6 +9,7 @@ import android.provider.DocumentsProvider
 import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.FileNotFoundException
+import com.hastagaming.ideku.R
 
 class FileProvider : DocumentsProvider() {
 
