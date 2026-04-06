@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Auto-Fetch & Clean-Patch Modules
+      - name: Auto-Fetch & Bottom-Patch Modules
         run: |
           # 1. Ambil modul asli
           git clone --depth 1 https://github.com/termux/termux-app.git temp_termux
@@ -27,7 +27,7 @@ jobs:
           cp -r temp_termux/terminal-emulator .
           rm -rf temp_termux
 
-          # 2. PATCH Manifest: Hapus baris SDK (Wajib agar tidak bentrok)
+          # 2. PATCH Manifest: Hapus baris SDK
           sed -i '/sdkVersion/d' terminal-view/src/main/AndroidManifest.xml
           sed -i '/sdkVersion/d' terminal-emulator/src/main/AndroidManifest.xml
 
@@ -35,10 +35,10 @@ jobs:
           sed -i '/compileSdkVersion/d; /minSdkVersion/d; /targetSdkVersion/d' terminal-view/build.gradle
           sed -i '/compileSdkVersion/d; /minSdkVersion/d; /targetSdkVersion/d' terminal-emulator/build.gradle
 
-          # 4. PATCH build.gradle: Tambahkan Namespace & SDK baru di baris paling atas
-          # Kita gunakan '1i' (insert at line 1) agar Gradle membacanya paling dulu
-          sed -i "1i android { namespace 'com.termux.view'; compileSdk 34; defaultConfig { minSdk 24 } }" terminal-view/build.gradle
-          sed -i "1i android { namespace 'com.termux.terminal'; compileSdk 34; defaultConfig { minSdk 24 } }" terminal-emulator/build.gradle
+          # 4. APPEND build.gradle: Suntik konfigurasi baru di PALING BAWAH file
+          # Cara ini 100% aman karena dieksekusi setelah semua plugin & dependensi terbaca
+          echo "android { namespace 'com.termux.view'; compileSdk 34; defaultConfig { minSdk 24 } }" >> terminal-view/build.gradle
+          echo "android { namespace 'com.termux.terminal'; compileSdk 34; defaultConfig { minSdk 24 } }" >> terminal-emulator/build.gradle
 
       - name: Grant Execute Permissions (Global)
         # Kita beri izin ke SEMUA file .sh dan gradlew di semua subfolder
