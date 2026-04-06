@@ -18,6 +18,21 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Emergency Module Patch
+        run: |
+          # Kita ambil versi asli terminal-view langsung dari sumber Termux
+          git clone --depth 1 https://github.com/termux/termux-app.git temp_termux
+          
+          # Hapus folder terminal-view-lib yang "kosong" itu
+          rm -rf terminal-view-lib terminal-view
+          
+          # Salin folder terminal-view yang asli (berisi source code, bukan .aar)
+          cp -r temp_termux/terminal-view .
+          cp -r temp_termux/terminal-emulator .
+          
+          # Bersihkan sampah
+          rm -rf temp_termux
+
       - name: Grant Execute Permissions (Global)
         # Kita beri izin ke SEMUA file .sh dan gradlew di semua subfolder
         run: |
