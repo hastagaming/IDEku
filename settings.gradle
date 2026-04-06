@@ -1,18 +1,27 @@
 pluginManagement {
     repositories {
-        google()      // <--- WAJIB: Tambahkan ini agar plugin Android ditemukan
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
 }
 dependencyResolutionManagement {
+    // Ini memaksa semua modul menggunakan repositori yang didefinisikan di sini
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-        // PASTIKAN BARIS INI ADA:
-        maven { url 'https://jitpack.io' } 
+        maven { 
+            url 'https://jitpack.io' 
+            // Tambahkan ini untuk memastikan tidak ada cache yang rusak
+            content {
+                includeGroup "com.github.termux"
+            }
+        }
     }
 }
-rootProject.name = "IDEku"
+
+rootProject.name = "IDEku" // Sesuaikan dengan nama projectmu
 include ':app'
+include ':terminal-view'
+include ':terminal-emulator'
