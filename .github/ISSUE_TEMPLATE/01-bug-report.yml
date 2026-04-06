@@ -1,0 +1,13 @@
+name: "🐞 Bug Report"
+description: Laporkan kesalahan teknis di IDEku
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Terima kasih sudah melapor! Pilot akan segera mengecek radar.
+  - type: textarea
+    attributes:
+      label: Deskripsi Masalah
+      description: Apa yang terjadi?
+    validations:
+      required: true

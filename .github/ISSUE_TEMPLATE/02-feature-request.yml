@@ -1,0 +1,9 @@
+name: "🚀 Feature Request"
+description: Usulkan ide baru untuk IDEku
+body:
+  - type: textarea
+    attributes:
+      label: Ide Fitur
+      description: Jelaskan fitur apa yang kamu inginkan.
+    validations:
+      required: true
