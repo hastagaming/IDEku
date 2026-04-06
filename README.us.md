@@ -1,3 +1,4 @@
+[Versi Bahasa Indonesia (ID)](README.md) | **English Version**
 # IDEku 🚀
 **Mobile Integrated Development Environment for Android**
 
