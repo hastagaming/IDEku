@@ -23,12 +23,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "IDEku" // Sesuaikan dengan nama projectmu
 include ':app'
-
-// Logika Deteksi: Jika folder ada, sertakan sebagai modul lokal
-if (file('terminal-view').exists() && file('terminal-emulator').exists()) {
-    include ':terminal-view'
-    include ':terminal-emulator'
-    println "LOG: Menggunakan Termux-App Core (Local Module)"
-} else {
-    println "LOG: Folder lokal tidak ditemukan, bersiap menggunakan JitPack"
-}
+include ':terminal-view'
+include ':terminal-emulator'
