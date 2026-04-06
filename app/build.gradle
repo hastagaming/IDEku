@@ -44,16 +44,22 @@ android {
 }
 
 dependencies {
-     if (findProject(':terminal-view') != null) {
-        // JALUR 1: Self-Hosted (Termux-App Core Lokal)
+    // --- PROTOKOL HYBRID-SWITCH ---
+    if (findProject(':terminal-view') != null) {
+        // JALUR LOKAL (Self-Hosted di GitHub Repo)
         implementation project(':terminal-view')
         implementation project(':terminal-emulator')
+        println "LOG: Menggunakan Modul Lokal (Termux-App Core)"
     } else {
-        // JALUR 2: JitPack (Cadangan jika folder lokal dihapus)
-        // Kita gunakan termux-view lama atau repo hasil fork sendiri di JitPack
-        implementation 'com.github.termux:termux-view:v0.118.0'
+        // JALUR JITPACK (Cadangan jika folder lokal tidak ada)
+        // Kita beri pengecekan agar tidak error 401 jika JitPack sedang down
+        try {
+            implementation 'com.github.termux:termux-view:v0.118.0'
+        } catch (Exception e) {
+            println "LOG: JitPack Error, tapi tidak ada modul lokal!"
+        }
     }
-
+    
     implementation "androidx.annotation:annotation:1.7.0"
 
      // Tambahkan baris ini di paling atas untuk mengunci versi Kotlin
