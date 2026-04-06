@@ -18,8 +18,12 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant Exec Perms
-        run: chmod +x gradlew
+      - name: Grant Execute Permissions (Global)
+        # Kita beri izin ke SEMUA file .sh dan gradlew di semua subfolder
+        run: |
+          chmod +x gradlew
+          find . -type f -name "*.sh" -exec chmod +x {} +
+          find . -type f -name "gradlew" -exec chmod +x {} +
 
       - name: Build with Gradle
         run: ./gradlew assembleDebug --no-daemon --stacktrace
