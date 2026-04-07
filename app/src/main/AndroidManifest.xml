@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.MANAGE_DOCUMENTS" 
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="ndroid.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -46,8 +47,11 @@
             </intent-filter>
         </provider>
 
-       <service android:name=".IDEkuService"
-                android:foregroundServiceType="specialUse" />
+       <service 
+          android:name=".IDEkuService"
+          android:enabled="true"
+          android:exported="false"
+          android:foregroundServiceType="specialUse" />
 
     </application>
 
