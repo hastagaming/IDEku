@@ -1,4 +1,4 @@
-package com.hastagaming.ideku
+package com.hastagaming.ideku // Perbaikan: 'package' harus huruf kecil
 
 import android.content.Intent
 import android.net.Uri
@@ -21,10 +21,8 @@ import com.termux.view.TerminalView
 import io.github.rosemoe.sora.langs.java.JavaLanguage
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.SchemeEclipse
-import org.eclipse.jgit.api.Git
 import java.io.File
 import java.io.FileOutputStream
-import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
@@ -35,13 +33,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var terminalView: TerminalView
     private var terminalSession: TerminalSession? = null
     private lateinit var tvCurrentFile: TextView
+
+    // Variabel Lingkungan Global
     private val workingDir = "/data/data/com.hastagaming.ideku/files/home"
     private val shellPath = "/system/bin/sh"
-    private val env = arrayOf("TERM=xterm-256color",
-                              "HOME=$workingDir")
-
-    private lateinit var homeDir: File
     private lateinit var binDir: File
+    private lateinit var homeDir: File
     private var currentDirectory: File? = null
     private var openedFile: File? = null
 
@@ -49,127 +46,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        terminalView = findViewById(R.id.terminal_view)
-        File(workingDir).mkdirs()
-
-        startTerminalWithBootstrap()
-
-        // 1. Setup Folder & Pindahkan Senjata dari Assets
+        // 1. Inisialisasi UI & Folder
+        initUI()
         setupIsolatedEnv()
         deployAssets() 
 
-        // 2. UI & Terminal
-        initUI()
-        startTerminal()
+        // 2. Jalankan Terminal dengan Bootstrap & Notifikasi
+        startTerminalWithBootstrap()
 
         checkStoragePermission()
         loadDirectory(homeDir)
-    }
-
-    private fun startTerminalWithBootstrap() {
-    // 1. Jalankan Service Notifikasi
-    val serviceIntent = Intent(this, IDEkuService::class.java)
-        startForegroundService(serviceIntent)
-
-    val sessionClient = object : TerminalSessionClient {
-            override fun onTextChanged(session: TerminalSession) { terminalView.onScreenUpdated() }
-            override fun onSessionFinished(session: TerminalSession) { finish() }
-            override fun onClipboardText(session: TerminalSession, text: String) {}
-            override fun onBell(session: TerminalSession) {}
-            override fun onColorsChanged(session: TerminalSession) {}
-            override fun onTitleChanged(session: TerminalSession) {}
-            // Method wajib untuk Termux Core 2026:
-            override fun onTerminalCursorStateChange(state: Boolean) {}
-            override fun setTerminalShellExitStatus(status: Int) {}
-        }
-
-    val session = TerminalSession(shellPath, workingDir, null, env, sessionClient)
-        terminalView.attachSession(session)
-
-    // 2. Tampilkan Loading Bootstrap di Terminal
-    terminalView.setTextSize(14)
-    val session = TerminalSession("/system/bin/sh", workingDir, null, env, sessionClient)
-    terminalView.attachSession(session)
-
-    // Simulasi Loading TUI
-    session.write("\r\n \u001b[32m[#] Booting IDEku Terminal...\u001b[0m\r\n")
-    session.write(" \u001b[33m[*] Loading System...\u001b[0m\r\n")
-    
-    // Delay sebentar agar estetik
-    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-        // Bersihkan layar dan munculkan tanda [1]
-        session.write("\u001b[H\u001b[2J") // Clear screen ANSI
-        session.write("\u001b[36m[1] IDEku Ready!\u001b[0m\r\n")
-        session.write("IDEku:~$ ")
-       }, 1500)
-   }
-
-
-    private fun setupIsolatedEnv() {
-        binDir = File(filesDir, "usr/bin")
-        homeDir = File(filesDir.parentFile, "home")
-        val tmpDir = File(filesDir, "tmp")
-
-        listOf(binDir, homeDir, tmpDir).forEach {
-            if (!it.exists()) it.mkdirs()
-            it.setExecutable(true, false)
-        }
-    }
-
-    /**
-     * Menghubungkan biner dari Assets ke Sistem Internal IDE
-     */
-    private fun deployAssets() {
-        val abi = Build.SUPPORTED_ABIS[0]
-        
-        // Pilih biner BusyBox sesuai Arsitektur
-        val busyboxSource = when {
-            abi.contains("arm64") -> "busybox_arm64"
-            abi.contains("armeabi") -> "busybox_arm"
-            abi.contains("x86_64") -> "busybox_x86_64"
-            else -> "busybox_x86"
-        }
-
-        // Pilih AAPT2 (Umumnya arm64 atau x86_64)
-        val aapt2Source = if (abi.contains("arm64")) "aapt2_arm64" else "aapt2_x86_64"
-
-        // Daftar pemetaan (Nama di Assets -> Nama Target di bin/)
-        val assetsToDeploy = listOf(
-            busyboxSource to "busybox",
-            aapt2Source to "aapt2",
-            "d8.jar" to "d8.jar",
-            "bw" to "bw"
-        )
-
-        assetsToDeploy.forEach { (assetName, targetName) ->
-            val destFile = File(binDir, targetName)
-            
-            // Hanya copy jika belum ada (hemat resource)
-            if (!destFile.exists()) {
-                try {
-                    assets.open(assetName).use { input ->
-                        FileOutputStream(destFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    destFile.setExecutable(true, false)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-
-        // Jalankan Symlink BusyBox agar perintah ls, cp, dll aktif
-        bootstrapBusyBoxLinks()
-    }
-
-    private fun bootstrapBusyBoxLinks() {
-        val busybox = File(binDir, "busybox").absolutePath
-        try {
-            Runtime.getRuntime().exec("$busybox --install -s ${binDir.absolutePath}").waitFor()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     private fun initUI() {
@@ -177,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         drawerLayout = findViewById(R.id.drawerLayout)
         rvFiles = findViewById(R.id.rvFiles)
         tvCurrentFile = findViewById(R.id.tvCurrentFileName)
+        // Pastikan di activity_main.xml ID-nya adalah 'terminalView'
         terminalView = findViewById(R.id.terminalView)
 
         editor.colorScheme = SchemeEclipse()
@@ -191,54 +78,115 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnSave).setOnClickListener { saveFile() }
         findViewById<Button>(R.id.btnRun).setOnClickListener { runBuildCommand() }
-        }
-
-        private fun startTerminal() {
-        // Persiapkan Environment Variable
-        val env = arrayOf(
-            "PATH=${binDir.absolutePath}:${System.getenv("PATH")}",
-            "HOME=${homeDir.absolutePath}",
-            "TERM=xterm-256color"
-        )
-
-        // 1. Inisialisasi Sesi PTY
-        terminalSession = TerminalSession(
-            "/system/bin/sh",           // Shell yang dijalankan
-            homeDir.absolutePath,       // Lokasi awal (Home)
-            null,                       // Argumen tambahan
-            env,                        // Environment kita
-            object : TerminalSession.TerminalSessionClient {
-                override fun onTextChanged(session: TerminalSession) {
-                    // Update tampilan setiap ada teks baru dari shell
-                    terminalView.onScreenUpdated()
-                }
-                override fun onSessionFinished(session: TerminalSession) {
-                    // Opsional: Logika jika terminal ditutup
-                }
-                override fun onClipboardText(session: TerminalSession, text: String) {}
-                override fun onBell(session: TerminalSession) {}
-                override fun onColorsChanged(session: TerminalSession) {}
-                override fun onTitleChanged(session: TerminalSession) {}
-            }
-        )
-
-        // 2. Hubungkan Sesi ke View agar muncul di layar
-        terminalView.attachSession(terminalSession)
-        
-        // 3. Kirim pesan selamat datang ke PTY
-        terminalSession?.write("\r\n[ IDEku | System Ready ]\r\n")
-        terminalSession?.write("Binaries: ${binDir.path}\r\n\n")
     }
 
+    private fun startTerminalWithBootstrap() {
+        // Trigger Service Notifikasi
+        val serviceIntent = Intent(this, IDEkuService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
+        }
 
-        private fun runBuildCommand() {
+        // Setup Environment PATH agar BusyBox terbaca
+        val env = arrayOf(
+            "TERM=xterm-256color",
+            "HOME=$workingDir",
+            "PATH=${binDir.absolutePath}:${System.getenv("PATH")}"
+        )
+
+        // Setup Client (Sesuai Log Error: onCopyTextToClipboard & onTerminalCursorStateChange)
+        val sessionClient = object : TerminalSessionClient {
+            override fun onTextChanged(session: TerminalSession) { terminalView.onScreenUpdated() }
+            override fun onSessionFinished(session: TerminalSession) { finish() }
+            override fun onCopyTextToClipboard(session: TerminalSession, text: String?) {}
+            override fun onBell(session: TerminalSession) {}
+            override fun onColorsChanged(session: TerminalSession) {}
+            override fun onTitleChanged(session: TerminalSession) {}
+            override fun onTerminalCursorStateChange(state: Boolean) {}
+        }
+
+        // Inisialisasi Session Tunggal (Fix Parameter p5)
+        terminalSession = TerminalSession(
+            shellPath,
+            workingDir,
+            null, // args
+            env,
+            sessionClient
+        )
+
+        terminalView.attachSession(terminalSession)
+        terminalView.setTextSize(14)
+
+        // Efek Bootstrap Visual
+        terminalSession?.write("\r\n\u001b[32m[#] NASA-IDE Initializing...\u001b[0m\r\n")
+        terminalSession?.write("\u001b[33m[*] Loading System...\u001b[0m\r\n")
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            terminalSession?.write("\u001b[H\u001b[2J") // Clear Screen ANSI
+            terminalSession?.write("\u001b[1;36m[1] IDEku Ready!\u001b[0m\r\n")
+            terminalSession?.write("IDEku:~$ ")
+        }, 1500)
+    }
+
+    private fun setupIsolatedEnv() {
+        binDir = File(filesDir, "usr/bin")
+        homeDir = File(filesDir.parentFile, "home")
+        val tmpDir = File(filesDir, "tmp")
+
+        listOf(binDir, homeDir, tmpDir).forEach {
+            if (!it.exists()) it.mkdirs()
+            it.setExecutable(true, false)
+        }
+    }
+
+    private fun deployAssets() {
+        val abi = Build.SUPPORTED_ABIS[0]
+        val busyboxSource = when {
+            abi.contains("arm64") -> "busybox_arm64"
+            abi.contains("armeabi") -> "busybox_arm"
+            abi.contains("x86_64") -> "busybox_x86_64"
+            else -> "busybox_x86"
+        }
+
+        val aapt2Source = if (abi.contains("arm64")) "aapt2_arm64" else "aapt2_x86_64"
+
+        val assetsToDeploy = listOf(
+            busyboxSource to "busybox",
+            aapt2Source to "aapt2",
+            "d8.jar" to "d8.jar",
+            "bw" to "bw"
+        )
+
+        assetsToDeploy.forEach { (assetName, targetName) ->
+            val destFile = File(binDir, targetName)
+            if (!destFile.exists()) {
+                try {
+                    assets.open(assetName).use { input ->
+                        FileOutputStream(destFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    destFile.setExecutable(true, false)
+                } catch (e: Exception) { e.printStackTrace() }
+            }
+        }
+        bootstrapBusyBoxLinks()
+    }
+
+    private fun bootstrapBusyBoxLinks() {
+        val busybox = File(binDir, "busybox").absolutePath
+        try {
+            Runtime.getRuntime().exec("$busybox --install -s ${binDir.absolutePath}").waitFor()
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    private fun runBuildCommand() {
         val projectPath = currentDirectory?.absolutePath ?: homeDir.absolutePath
-        // Mengirim perintah ke PTY (seperti mengetik langsung di terminal)
-        // \n di akhir sangat penting agar perintah langsung dieksekusi (Enter)
         terminalSession?.write("bw build --dir $projectPath\n")
     }
 
-    // --- SISANYA TETAP SAMA DENGAN KODE KAMU ---
     private fun checkStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
