@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.Environment
 import android.provider.Settings
 import android.widget.Button
@@ -13,8 +15,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.termux.view.TerminalView
 import com.termux.terminal.TerminalSession
+import com.termux.terminal.TerminalSessionClient
+import com.termux.view.TerminalView
 import io.github.rosemoe.sora.langs.java.JavaLanguage
 import io.github.rosemoe.sora.widget.CodeEditor
 import io.github.rosemoe.sora.widget.schemes.SchemeEclipse
@@ -32,6 +35,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var terminalView: TerminalView
     private var terminalSession: TerminalSession? = null
     private lateinit var tvCurrentFile: TextView
+    private val workingDir = "/data/data/com.hastagaming.ideku/files/home"
+    private val shellPath = "/system/bin/sh"
+    private val env = arrayOf("TERM=xterm-256color",
+                              "HOME=$workingDir")
 
     private lateinit var homeDir: File
     private lateinit var binDir: File
@@ -41,6 +48,11 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        terminalView = findViewById(R.id.terminal_view)
+        File(workingDir).mkdirs()
+
+        startTerminalWithBootstrap()
 
         // 1. Setup Folder & Pindahkan Senjata dari Assets
         setupIsolatedEnv()
@@ -57,7 +69,22 @@ class MainActivity : AppCompatActivity() {
     private fun startTerminalWithBootstrap() {
     // 1. Jalankan Service Notifikasi
     val serviceIntent = Intent(this, IDEkuService::class.java)
-    startService(serviceIntent)
+        startForegroundService(serviceIntent)
+
+    val sessionClient = object : TerminalSessionClient {
+            override fun onTextChanged(session: TerminalSession) { terminalView.onScreenUpdated() }
+            override fun onSessionFinished(session: TerminalSession) { finish() }
+            override fun onClipboardText(session: TerminalSession, text: String) {}
+            override fun onBell(session: TerminalSession) {}
+            override fun onColorsChanged(session: TerminalSession) {}
+            override fun onTitleChanged(session: TerminalSession) {}
+            // Method wajib untuk Termux Core 2026:
+            override fun onTerminalCursorStateChange(state: Boolean) {}
+            override fun setTerminalShellExitStatus(status: Int) {}
+        }
+
+    val session = TerminalSession(shellPath, workingDir, null, env, sessionClient)
+        terminalView.attachSession(session)
 
     // 2. Tampilkan Loading Bootstrap di Terminal
     terminalView.setTextSize(14)
@@ -72,8 +99,8 @@ class MainActivity : AppCompatActivity() {
     android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
         // Bersihkan layar dan munculkan tanda [1]
         session.write("\u001b[H\u001b[2J") // Clear screen ANSI
-        session.write("\u001b[36m[1] IDEku Ready, Commander Nasa!\u001b[0m\r\n")
-        session.write("hastagaming@ideku:~$ ")
+        session.write("\u001b[36m[1] IDEku Ready!\u001b[0m\r\n")
+        session.write("IDEku:~$ ")
        }, 1500)
    }
 
