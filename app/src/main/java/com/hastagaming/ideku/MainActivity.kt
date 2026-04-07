@@ -33,6 +33,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var terminalView: TerminalView
     private var terminalSession: TerminalSession? = null
     private lateinit var tvCurrentFile: TextView
+    private var isCtrlActive = false
+    private var isAltActive = false
 
     // Variabel Lingkungan Global
     private val workingDir = "/data/data/com.hastagaming.ideku/files/home"
@@ -56,6 +58,9 @@ class MainActivity : AppCompatActivity() {
 
         checkStoragePermission()
         loadDirectory(homeDir)
+
+        // 3. Panggil setup extra keys
+        setupExtraKeys()
     }
 
     private fun initUI() {
@@ -105,6 +110,43 @@ class MainActivity : AppCompatActivity() {
             override fun onColorsChanged(session: TerminalSession) {}
             override fun onTitleChanged(session: TerminalSession) {}
             override fun onTerminalCursorStateChange(state: Boolean) {}
+        }
+
+        private fun setupExtraKeys() {
+            val keys = mapOf(
+                R.id.key_esc to "\u001b",
+                R.id.key_home to "\u001b[H",
+                R.id.key_end to "\u001b[F",
+                R.id.key_pgup to "\u001b[5~",
+                R.id.key_pgdn to "\u001b[6~",
+                R.id.key_up to "\u001b[A",
+                R.id.key_down to "\u001b[B",
+                R.id.key_left to "\u001b[D",
+                R.id.key_right to "\u001b[C",
+                R.id.key_tab to "\t"
+        )
+
+        // Set Klik Listener untuk Tombol Navigasi Umum
+        keys.forEach { (id, sequence) ->
+        findViewById<View>(id).setOnClickListener {
+            terminalSession?.write(sequence)
+             }
+        }
+
+        // Logika Khusus CTRL & ALT (Sticky Keys)
+        val btnCtrl = findViewById<Button>(R.id.key_ctrl)
+            btnCtrl.setOnClickListener {
+            isCtrlActive = !isCtrlActive
+            btnCtrl.setBackgroundColor(if (isCtrlActive) 0xFF444444.toInt() else 0x00000000)
+            // Jika library mendukung, kirim state ke TerminalView
+            // terminalView.setControlModifier(isCtrlActive) 
+        }
+
+        val btnAlt = findViewById<Button>(R.id.key_alt)
+            btnAlt.setOnClickListener {
+            isAltActive = !isAltActive
+            btnAlt.setBackgroundColor(if (isAltActive) 0xFF444444.toInt() else 0x00000000)
+              }
         }
 
         // Inisialisasi Session Tunggal (Fix Parameter p5)
