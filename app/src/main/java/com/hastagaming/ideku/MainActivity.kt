@@ -1,4 +1,4 @@
-package com.hastagaming.ideku // Perbaikan: 'package' harus huruf kecil
+package com.hastagaming.ideku
 
 import android.content.Intent
 import android.net.Uri
@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Environment
 import android.provider.Settings
+import android.view.View // [PERBAIKAN 1]: Import View untuk findViewById Extra Keys
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -68,7 +69,6 @@ class MainActivity : AppCompatActivity() {
         drawerLayout = findViewById(R.id.drawerLayout)
         rvFiles = findViewById(R.id.rvFiles)
         tvCurrentFile = findViewById(R.id.tvCurrentFileName)
-        // Pastikan di activity_main.xml ID-nya adalah 'terminalView'
         terminalView = findViewById(R.id.terminalView)
 
         editor.colorScheme = SchemeEclipse()
@@ -101,55 +101,19 @@ class MainActivity : AppCompatActivity() {
             "PATH=${binDir.absolutePath}:${System.getenv("PATH")}"
         )
 
-        // Setup Client (Sesuai Log Error: onCopyTextToClipboard & onTerminalCursorStateChange)
+        // Setup Client
         val sessionClient = object : TerminalSessionClient {
             override fun onTextChanged(session: TerminalSession) { terminalView.onScreenUpdated() }
             override fun onSessionFinished(session: TerminalSession) { finish() }
             override fun onCopyTextToClipboard(session: TerminalSession, text: String?) {}
+            override fun onPasteTextFromClipboard(session: TerminalSession?) {} // [PERBAIKAN 2]: Menambahkan fungsi wajib ini
             override fun onBell(session: TerminalSession) {}
             override fun onColorsChanged(session: TerminalSession) {}
             override fun onTitleChanged(session: TerminalSession) {}
             override fun onTerminalCursorStateChange(state: Boolean) {}
         }
 
-        private fun setupExtraKeys() {
-            val keys = mapOf(
-                R.id.key_esc to "\u001b",
-                R.id.key_home to "\u001b[H",
-                R.id.key_end to "\u001b[F",
-                R.id.key_pgup to "\u001b[5~",
-                R.id.key_pgdn to "\u001b[6~",
-                R.id.key_up to "\u001b[A",
-                R.id.key_down to "\u001b[B",
-                R.id.key_left to "\u001b[D",
-                R.id.key_right to "\u001b[C",
-                R.id.key_tab to "\t"
-        )
-
-        // Set Klik Listener untuk Tombol Navigasi Umum
-        keys.forEach { (id, sequence) ->
-        findViewById<View>(id).setOnClickListener {
-            terminalSession?.write(sequence)
-             }
-        }
-
-        // Logika Khusus CTRL & ALT (Sticky Keys)
-        val btnCtrl = findViewById<Button>(R.id.key_ctrl)
-            btnCtrl.setOnClickListener {
-            isCtrlActive = !isCtrlActive
-            btnCtrl.setBackgroundColor(if (isCtrlActive) 0xFF444444.toInt() else 0x00000000)
-            // Jika library mendukung, kirim state ke TerminalView
-            // terminalView.setControlModifier(isCtrlActive) 
-        }
-
-        val btnAlt = findViewById<Button>(R.id.key_alt)
-            btnAlt.setOnClickListener {
-            isAltActive = !isAltActive
-            btnAlt.setBackgroundColor(if (isAltActive) 0xFF444444.toInt() else 0x00000000)
-              }
-        }
-
-        // Inisialisasi Session Tunggal (Fix Parameter p5)
+        // Inisialisasi Session Tunggal
         terminalSession = TerminalSession(
             shellPath,
             workingDir,
@@ -167,9 +131,45 @@ class MainActivity : AppCompatActivity() {
 
         Handler(Looper.getMainLooper()).postDelayed({
             terminalSession?.write("\u001b[H\u001b[2J") // Clear Screen ANSI
-            terminalSession?.write("\u001b[1;36m[1] IDEku Ready!\u001b[0m\r\n")
+            terminalSession?.write("\u001b[1;36m[1] IDEku Ready, Komandan Nasa!\u001b[0m\r\n")
             terminalSession?.write("IDEku:~$ ")
         }, 1500)
+    }
+
+    // [PERBAIKAN 3]: Fungsi ini dikeluarkan dari dalam startTerminalWithBootstrap
+    private fun setupExtraKeys() {
+        val keys = mapOf(
+            R.id.key_esc to "\u001b",
+            R.id.key_home to "\u001b[H",
+            R.id.key_end to "\u001b[F",
+            R.id.key_pgup to "\u001b[5~",
+            R.id.key_pgdn to "\u001b[6~",
+            R.id.key_up to "\u001b[A",
+            R.id.key_down to "\u001b[B",
+            R.id.key_left to "\u001b[D",
+            R.id.key_right to "\u001b[C",
+            R.id.key_tab to "\t"
+        )
+
+        // Set Klik Listener untuk Tombol Navigasi Umum
+        keys.forEach { (id, sequence) ->
+            findViewById<View>(id).setOnClickListener {
+                terminalSession?.write(sequence)
+            }
+        }
+
+        // Logika Khusus CTRL & ALT (Sticky Keys)
+        val btnCtrl = findViewById<Button>(R.id.key_ctrl)
+        btnCtrl.setOnClickListener {
+            isCtrlActive = !isCtrlActive
+            btnCtrl.setBackgroundColor(if (isCtrlActive) 0xFF444444.toInt() else 0x00000000)
+        }
+
+        val btnAlt = findViewById<Button>(R.id.key_alt)
+        btnAlt.setOnClickListener {
+            isAltActive = !isAltActive
+            btnAlt.setBackgroundColor(if (isAltActive) 0xFF444444.toInt() else 0x00000000)
+        }
     }
 
     private fun setupIsolatedEnv() {

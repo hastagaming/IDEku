@@ -1,5 +1,6 @@
 package com.hastagaming.ideku
 
+import com.hastagaming.ideku.R
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.os.CancellationSignal
@@ -9,7 +10,6 @@ import android.provider.DocumentsProvider
 import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.FileNotFoundException
-import com.hastagaming.ideku.R
 
 class FileProvider : DocumentsProvider() {
 
