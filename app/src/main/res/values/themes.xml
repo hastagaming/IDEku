@@ -5,4 +5,15 @@
         <item name="colorAccent">@color/ubuntu_accent_orange</item>
         <item name="android:statusBarColor">@color/ubuntu_border_dark</item>
     </style>
+
+    <style name="ExtraKeyStyle">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">42dp</item>
+        <item name="android:layout_columnWeight">1</item>
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textAllCaps">true</item>
+    </style>
 </resources>

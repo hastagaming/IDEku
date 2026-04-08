@@ -48,10 +48,12 @@
         </provider>
 
        <service 
-          android:name=".IDEkuService"
-          android:enabled="true"
-          android:exported="false"
-          android:foregroundServiceType="specialUse" />
+           android:name=".IDEkuService"
+           android:foregroundServiceType="specialUse">
+           <property 
+               android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" 
+               android:value="Terminal and Development Tools" />
+    </service>
 
     </application>
 
