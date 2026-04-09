@@ -9,6 +9,10 @@ on:
       - 'LICENSE'
   workflow_dispatch:
 
+# Memberikan izin bot untuk menulis ke Release Tab
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,25 +29,23 @@ jobs:
 
       - name: Auto-Fetch & Clean Overwrite Modules
         run: |
-          # 1. Ambil Source Termux (Gunakan depth 1 agar cepat)
+          # 1. Ambil Source Termux
           git clone --depth 1 https://github.com/termux/termux-app.git temp_termux
           rm -rf terminal-view terminal-emulator
           
-          # Salin modul utama
           cp -r temp_termux/terminal-view .
           cp -r temp_termux/terminal-emulator .
           
-          # Cek dependensi common jika ada (opsional tapi disarankan)
           if [ -d "temp_termux/terminal-common" ]; then
             cp -r temp_termux/terminal-common .
           fi
           rm -rf temp_termux
 
-          # 2. Patch Manifest (Bersihkan baris sdkVersion yang bikin bentrok)
+          # 2. Patch Manifest
           sed -i '/sdkVersion/d' terminal-view/src/main/AndroidManifest.xml
           sed -i '/sdkVersion/d' terminal-emulator/src/main/AndroidManifest.xml
 
-          # 3. Rakit terminal-emulator/build.gradle (Dengan Perbaikan JNI Header)
+          # 3. Rakit terminal-emulator/build.gradle (JNI Header Fix)
           cat << 'EOF' > terminal-emulator/build.gradle
           apply plugin: 'com.android.library'
           android {
@@ -55,7 +57,6 @@ jobs:
                   targetSdk 34
                   externalNativeBuild {
                       ndkBuild {
-                          // Tambahkan Include Path agar header JNI ditemukan
                           cFlags "-std=c11", "-Wall", "-Wextra", "-Os", "-I${projectDir}/src/main/jni"
                       }
                   }
@@ -98,12 +99,15 @@ jobs:
 
       - name: Manual Sign & Zipalign APK
         run: |
-          # 1. Cari Tools (Cari yang terbaru di build-tools)
+          # 1. Cari Tools
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
 
-          # 2. Sniper Target APK (Hanya ambil file release, abaikan debug)
-          TARGET_APK=$(find app/build/outputs/apk/release -name "*release*.apk" | head -n 1)
+          # 2. Sniper Target (Cari yang Unsigned dulu)
+          TARGET_APK=$(find app/build/outputs/apk/release -name "*-unsigned.apk" | head -n 1)
+          if [ -z "$TARGET_APK" ]; then
+            TARGET_APK=$(find app/build/outputs/apk/release -name "*release.apk" | head -n 1)
+          fi
           
           if [ -z "$TARGET_APK" ]; then
             echo "ERROR: APK Release tidak ditemukan!"
@@ -112,29 +116,22 @@ jobs:
           
           echo "Memproses: $TARGET_APK"
 
-          # 3. Ekstrak Keystore dari Secrets
+          # 3. Keystore
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
 
-          # 4. Zipalign (Wajib untuk rilis Play Store/Produksi)
-          $ZIPALIGN -v 4 "$TARGET_APK" IDEku-Final-Aligned.apk
+          # 4. Zipalign
+          $ZIPALIGN -v 4 "$TARGET_APK" aligned-temp.apk
 
-          # 5. Signing (Tanda tangan basah)
+          # 5. Signing
           $APKSIGNER sign --ks release.jks \
             --ks-key-alias "${{ secrets.ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
             --out IDEku-Final.apk \
-            IDEku-Final-Aligned.apk
+            aligned-temp.apk
 
           # 6. Verifikasi
           $APKSIGNER verify IDEku-Final.apk
-          echo "APK SIAP TEMPUR: IDEku-Final.apk"
-
-      - name: Upload Finished APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: IDEku-Final-Build
-          path: IDEku-Final.apk
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -143,9 +140,11 @@ jobs:
           name: "IDEku Auto Build #${{ github.run_number }}"
           tag_name: "v1.0.${{ github.run_number }}"
           body: |
-            Build otomatis IDEku sukses!
-            - Commit: ${{ github.event.head_commit.message }}
-            - Mesin Terminal (NDK/C++) terkompilasi penuh.
-            - Status: Signed & Aligned.
+            ### 🚀 IDEku Build Success!
+            - **Commit:** `${{ github.sha }}`
+            - **Message:** ${{ github.event.head_commit.message }}
+            - **Status:** Signed, Zipaligned, & NDK-Enabled.
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
