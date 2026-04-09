@@ -64,31 +64,39 @@ jobs:
           name: IDEku-Debug-Unsigned
           path: app/build/outputs/apk/debug/*.apk
 
-      - name: Force Fix Build Tools Path
+      - name: Manual Sign & Zipalign APK
         run: |
-          # Cari di mana letak asli build-tools
-          REAL_PATH=$(find $ANDROID_HOME/build-tools -name "zipalign" | head -n 1 | xargs dirname)
-          echo "Ditemukan build-tools di: $REAL_PATH"
+          # 1. Cari lokasi tools secara dinamis di runner
+          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
           
-          # Target folder yang diminta oleh action signing
-          TARGET_DIR="/usr/local/lib/android/sdk/build-tools/29.0.3"
-          
-          # Gunakan sudo untuk membuat direktori dan link
-          sudo mkdir -p $(dirname $TARGET_DIR)
-          sudo ln -sfn $REAL_PATH $TARGET_DIR
-          
-          # Verifikasi keberadaan zipalign di jalur palsu
-          ls -l $TARGET_DIR/zipalign
+          echo "Menggunakan Zipalign: $ZIPALIGN"
+          echo "Menggunakan Apksigner: $APKSIGNER"
 
-      - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
+          # 2. Ekstrak Keystore dari GitHub Secrets
+          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
+
+          # 3. Zipalign (Optimasi APK)
+          # Asumsi lokasi APK: app/build/outputs/apk/release/app-release-unsigned.apk
+          $ZIPALIGN -v 4 app/build/outputs/apk/release/*.apk IDEku-aligned.apk
+
+          # 4. Signing (Penandatanganan)
+          $APKSIGNER sign --ks release.jks \
+            --ks-key-alias "${{ secrets.ALIAS }}" \
+            --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
+            --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
+            --out IDEku-Final.apk \
+            IDEku-aligned.apk
+
+          # 5. Verifikasi Akhir
+          $APKSIGNER verify IDEku-Final.apk
+          echo "APK Berhasil Ditandatangani: IDEku-Final.apk"
+
+      - name: Upload Finished APK
+        uses: actions/upload-artifact@v4
         with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-        # Jangan gunakan env BUILD_TOOLS_VERSION di sini karena sudah terbukti ditolak
+          name: IDEku-Final-Build
+          path: IDEku-Final.apk
 
       - name: Create Release (Full Auto)
         uses: softprops/action-gh-release@v1
