@@ -25,91 +25,57 @@ jobs:
 
       - name: Auto-Fetch & Clean Overwrite Modules
         run: |
+          # 1. Ambil Source Termux
           git clone --depth 1 https://github.com/termux/termux-app.git temp_termux
           rm -rf terminal-view terminal-emulator
           cp -r temp_termux/terminal-view .
           cp -r temp_termux/terminal-emulator .
           rm -rf temp_termux
 
+          # 2. Patch Manifest
           sed -i '/sdkVersion/d' terminal-view/src/main/AndroidManifest.xml
           sed -i '/sdkVersion/d' terminal-emulator/src/main/AndroidManifest.xml
 
+          # 3. Rakit terminal-emulator/build.gradle (Tanpa Maven-Publish yang Error)
           cat << 'EOF' > terminal-emulator/build.gradle
           apply plugin: 'com.android.library'
-          apply plugin: 'maven-publish'
-
           android {
-              // Menggunakan namespace yang konsisten dengan kode NASA-IDE
               namespace "com.termux.terminal"
-
-              // Menggunakan nilai tetap agar tidak error saat di GitHub Actions
               compileSdk 34
-              
-              // Gunakan NDK default dari runner atau pasang manual jika perlu
               ndkVersion "26.1.10909125"
-
               defaultConfig {
                   minSdk 24
                   targetSdk 34
-
                   externalNativeBuild {
                       ndkBuild {
                           cFlags "-std=c11", "-Wall", "-Wextra", "-Werror", "-Os", "-fno-stack-protector", "-Wl,--gc-sections"
                       }
                   }
-
                   ndk {
                       abiFilters 'x86', 'x86_64', 'armeabi-v7a', 'arm64-v8a'
                   }
               }
-
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-                  }
-              }
-
               externalNativeBuild {
                   ndkBuild {
                       path "src/main/jni/Android.mk"
                   }
               }
-
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_1_8
                   targetCompatibility JavaVersion.VERSION_1_8
               }
-
-              testOptions {
-                  unitTests.returnDefaultValues = true
-              }
           }
-
           dependencies {
               implementation "androidx.annotation:annotation:1.7.0"
               testImplementation "junit:junit:4.13.2"
           }
-
-          // Penyesuaian Publikasi agar kompatibel dengan GitHub Runner
-          afterEvaluate {
-              publishing {
-                  publications {
-                      release(MavenPublication) {
-                          from components.release
-                          groupId = 'com.termux'
-                          artifactId = 'terminal-emulator'
-                          version = '0.118.0'
-                      }
-                  }
-              }
-          }
           EOF
 
+          # 4. Rakit terminal-view/build.gradle
           cat << 'EOF' > terminal-view/build.gradle
           apply plugin: 'com.android.library'
           android { namespace 'com.termux.view'; compileSdk 34; defaultConfig { minSdk 24 } }
-          dependencies { 
+          dependencies {
               implementation project(':terminal-emulator')
               implementation 'androidx.annotation:annotation:1.7.0'
               implementation 'androidx.appcompat:appcompat:1.6.1'
@@ -120,24 +86,25 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build All Variants
-        run: ./gradlew assembleDebug assembleRelease --no-daemon
+        run: ./gradlew clean assembleRelease --no-daemon
 
       - name: Manual Sign & Zipalign APK
         run: |
-          # 1. Cari zipalign & apksigner di mana pun mereka sembunyi
+          # 1. Cari Tools
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
-          
-          echo "Dapet senjatanya: $ZIPALIGN & $APKSIGNER"
 
-          # 2. Siapkan Keystore
+          # 2. Ambil APK Release (Gunakan head -n 1 agar tidak ambigu)
+          TARGET_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "Target APK: $TARGET_APK"
+
+          # 3. Keystore dari Secrets
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
 
-          # 3. Zipalign (Biar APK-nya ramping & stabil)
-          # Kita ambil file .apk yang ada di folder release
-          $ZIPALIGN -v 4 app/build/outputs/apk/release/*.apk IDEku-Final-Aligned.apk
+          # 4. Zipalign
+          $ZIPALIGN -v 4 "$TARGET_APK" IDEku-Final-Aligned.apk
 
-          # 4. Signing (Tanda tangan basah!)
+          # 5. Signing
           $APKSIGNER sign --ks release.jks \
             --ks-key-alias "${{ secrets.ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
@@ -145,9 +112,8 @@ jobs:
             --out IDEku-Final.apk \
             IDEku-Final-Aligned.apk
 
-          # 5. Verifikasi
+          # 6. Verifikasi
           $APKSIGNER verify IDEku-Final.apk
-          echo "APK SUDAH SIAP TEMPUR!"
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
@@ -155,13 +121,12 @@ jobs:
           name: IDEku-Final-Build
           path: IDEku-Final.apk
 
-      - name: Create Release (Full Auto)
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          # Kita arahkan langsung ke file hasil signing manual tadi
           files: IDEku-Final.apk
           name: "IDEku Auto Build #${{ github.run_number }}"
           tag_name: "v1.0.${{ github.run_number }}"
-          body: "Build otomatis IDEku dari commit: ${{ github.event.head_commit.message }}"
+          body: "Build otomatis IDEku dari commit: ${{ github.event.head_commit.message }}. Mesin NDK terpasang."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
