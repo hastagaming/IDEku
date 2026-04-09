@@ -57,40 +57,31 @@ jobs:
         run: ./gradlew assembleDebug assembleRelease --no-daemon
 
       - name: Manual Sign & Zipalign APK
-        id: sign_app
         run: |
-          # 1. Cari lokasi tools secara dinamis
+          # 1. Cari zipalign & apksigner di mana pun mereka sembunyi
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
           
-          # 2. Identifikasi APK Release yang belum ditandatangani
-          # Mencari file yang mengandung 'release' dan 'unsigned'
-          UNSIGNED_APK=$(find app/build/outputs/apk/release -name "*release-unsigned.apk" | head -n 1)
-          
-          # Jika tidak ada yang pakai nama 'unsigned', cari yang 'release' saja
-          if [ -z "$UNSIGNED_APK" ]; then
-            UNSIGNED_APK=$(find app/build/outputs/apk/release -name "*release.apk" | head -n 1)
-          fi
+          echo "Dapet senjatanya: $ZIPALIGN & $APKSIGNER"
 
-          echo "Target APK: $UNSIGNED_APK"
-
-          # 3. Ekstrak Keystore
+          # 2. Siapkan Keystore
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
 
-          # 4. Zipalign
-          $ZIPALIGN -v 4 "$UNSIGNED_APK" IDEku-aligned.apk
+          # 3. Zipalign (Biar APK-nya ramping & stabil)
+          # Kita ambil file .apk yang ada di folder release
+          $ZIPALIGN -v 4 app/build/outputs/apk/release/*.apk IDEku-Final-Aligned.apk
 
-          # 5. Signing
+          # 4. Signing (Tanda tangan basah!)
           $APKSIGNER sign --ks release.jks \
             --ks-key-alias "${{ secrets.ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
             --out IDEku-Final.apk \
-            IDEku-aligned.apk
+            IDEku-Final-Aligned.apk
 
-          # 6. Verifikasi & Set Output untuk step berikutnya
+          # 5. Verifikasi
           $APKSIGNER verify IDEku-Final.apk
-          echo "signed_apk=IDEku-Final.apk" >> $GITHUB_OUTPUT
+          echo "APK SUDAH SIAP TEMPUR!"
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
