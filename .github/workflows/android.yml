@@ -106,9 +106,9 @@ jobs:
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
 
-          # 3. Sniper Isolation: Paksa ambil 1 file tanpa ekspansi wildcard shell
-          # -quit memastikan hanya file pertama yang diambil dan disalin ke 'input.apk'
-          find app/build/outputs/apk/release -name "*.apk" -type f -exec cp {} input.apk \; -quit
+          # 3. Taktik Direct Link: Paksa salin file langsung ke input.apk
+          # Menghindari error find dan memastikan zipalign hanya menerima 1 file
+          cp app/build/outputs/apk/release/*.apk input.apk 2>/dev/null || cp app/build/outputs/apk/release/*/*.apk input.apk
           
           if [ ! -f "input.apk" ]; then
             echo "ERROR: Target APK tidak ditemukan!"
