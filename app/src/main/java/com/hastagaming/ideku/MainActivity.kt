@@ -112,6 +112,7 @@ class MainActivity : AppCompatActivity() {
             // FIX: Tambahkan ini agar tidak error "not abstract"
             override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
             override fun getTerminalCursorStyle(): Int { return 0 }
+            override fun logError(tag: String?, message: String?) {}
         }
 
         // Inisialisasi Session (FIX: Tambahkan parameter '0' sebagai p5)

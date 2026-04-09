@@ -86,11 +86,11 @@ class IDEkuService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("IDEku Terminal is Active!")
             .setContentText("IDEku is running in the background...")
-            .setSmallIcon(android.R.drawable.ic_launcher_foreground) // Menggunakan ikon sistem sesuai request Komandan
+            .setSmallIcon(android.R.drawable.ic_dialog_info) // Menggunakan ikon sistem sesuai request Komandan
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(android.R.android.ic_lock_idle_low_power, wakeLockStatus, wakePendingIntent)
-            .addAction(android.R.android.ic_menu_close_clear_cancel, "Exit", stopPendingIntent)
+            .addAction(android.R.drawable.ic_lock_idle_low_power, wakeLockStatus, wakePendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Exit", stopPendingIntent)
             .build()
     }
 
