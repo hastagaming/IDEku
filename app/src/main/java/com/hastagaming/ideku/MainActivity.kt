@@ -8,7 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Environment
 import android.provider.Settings
-import android.view.View // [PERBAIKAN 1]: Import View untuk findViewById Extra Keys
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         setupIsolatedEnv()
         deployAssets() 
 
-        // 2. Jalankan Terminal dengan Bootstrap & Notifikasi
+        // 2. Jalankan Terminal
         startTerminalWithBootstrap()
 
         checkStoragePermission()
@@ -86,7 +86,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startTerminalWithBootstrap() {
-        // Trigger Service Notifikasi
         val serviceIntent = Intent(this, IDEkuService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
@@ -94,49 +93,47 @@ class MainActivity : AppCompatActivity() {
             startService(serviceIntent)
         }
 
-        // Setup Environment PATH agar BusyBox terbaca
         val env = arrayOf(
             "TERM=xterm-256color",
             "HOME=$workingDir",
             "PATH=${binDir.absolutePath}:${System.getenv("PATH")}"
         )
 
-        // Setup Client
+        // Setup Client dengan semua metode yang diwajibkan oleh Modul Lokal
         val sessionClient = object : TerminalSessionClient {
             override fun onTextChanged(session: TerminalSession) { terminalView.onScreenUpdated() }
             override fun onSessionFinished(session: TerminalSession) { finish() }
             override fun onCopyTextToClipboard(session: TerminalSession, text: String?) {}
-            override fun onPasteTextFromClipboard(session: TerminalSession?) {} // [PERBAIKAN 2]: Menambahkan fungsi wajib ini
+            override fun onPasteTextFromClipboard(session: TerminalSession?) {}
             override fun onBell(session: TerminalSession) {}
             override fun onColorsChanged(session: TerminalSession) {}
             override fun onTitleChanged(session: TerminalSession) {}
             override fun onTerminalCursorStateChange(state: Boolean) {}
+            // FIX: Tambahkan ini agar tidak error "not abstract"
+            override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
         }
 
-        // Inisialisasi Session Tunggal
+        // Inisialisasi Session (FIX: Tambahkan parameter '0' sebagai p5)
         terminalSession = TerminalSession(
             shellPath,
             workingDir,
-            null, // args
+            null, 
             env,
+            0, // Parameter integer yang diminta library
             sessionClient
         )
 
         terminalView.attachSession(terminalSession)
         terminalView.setTextSize(14)
 
-        // Efek Bootstrap Visual
         terminalSession?.write("\r\n\u001b[32m[#] NASA-IDE Initializing...\u001b[0m\r\n")
-        terminalSession?.write("\u001b[33m[*] Loading System...\u001b[0m\r\n")
-
         Handler(Looper.getMainLooper()).postDelayed({
-            terminalSession?.write("\u001b[H\u001b[2J") // Clear Screen ANSI
+            terminalSession?.write("\u001b[H\u001b[2J")
             terminalSession?.write("\u001b[1;36m[1] IDEku Ready, Komandan Nasa!\u001b[0m\r\n")
             terminalSession?.write("IDEku:~$ ")
         }, 1500)
     }
 
-    // [PERBAIKAN 3]: Fungsi ini dikeluarkan dari dalam startTerminalWithBootstrap
     private fun setupExtraKeys() {
         val keys = mapOf(
             R.id.key_esc to "\u001b",
@@ -151,14 +148,12 @@ class MainActivity : AppCompatActivity() {
             R.id.key_tab to "\t"
         )
 
-        // Set Klik Listener untuk Tombol Navigasi Umum
         keys.forEach { (id, sequence) ->
             findViewById<View>(id).setOnClickListener {
                 terminalSession?.write(sequence)
             }
         }
 
-        // Logika Khusus CTRL & ALT (Sticky Keys)
         val btnCtrl = findViewById<Button>(R.id.key_ctrl)
         btnCtrl.setOnClickListener {
             isCtrlActive = !isCtrlActive
@@ -172,11 +167,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // Fungsi setupIsolatedEnv, deployAssets, dll tetap sama seperti sebelumnya
     private fun setupIsolatedEnv() {
         binDir = File(filesDir, "usr/bin")
         homeDir = File(filesDir.parentFile, "home")
         val tmpDir = File(filesDir, "tmp")
-
         listOf(binDir, homeDir, tmpDir).forEach {
             if (!it.exists()) it.mkdirs()
             it.setExecutable(true, false)
@@ -191,16 +186,13 @@ class MainActivity : AppCompatActivity() {
             abi.contains("x86_64") -> "busybox_x86_64"
             else -> "busybox_x86"
         }
-
         val aapt2Source = if (abi.contains("arm64")) "aapt2_arm64" else "aapt2_x86_64"
-
         val assetsToDeploy = listOf(
             busyboxSource to "busybox",
             aapt2Source to "aapt2",
             "d8.jar" to "d8.jar",
             "bw" to "bw"
         )
-
         assetsToDeploy.forEach { (assetName, targetName) ->
             val destFile = File(binDir, targetName)
             if (!destFile.exists()) {

@@ -14,7 +14,7 @@ import java.io.FileNotFoundException
 class FileProvider : DocumentsProvider() {
 
     // Sesuaikan dengan yang ada di AndroidManifest.xml
-    private val AUTHORITY = "com.hastagaming.ideku.documents"
+    private val AUTHORITY = "com.ideku.documents"
 
     private val DEFAULT_ROOT_PROJECTION: Array<String> = arrayOf(
         DocumentsContract.Root.COLUMN_ROOT_ID,
@@ -49,13 +49,13 @@ class FileProvider : DocumentsProvider() {
         if (!homeDir.exists()) homeDir.mkdirs()
 
         matrix.newRow().apply {
-            add(DocumentsContract.Root.COLUMN_ROOT_ID, "nasa_ide_root")
+            add(DocumentsContract.Root.COLUMN_ROOT_ID, "IDEku_root")
             add(DocumentsContract.Root.COLUMN_DOCUMENT_ID, getDocIdForFile(homeDir))
-            add(DocumentsContract.Root.COLUMN_TITLE, "Nasa-IDE") // Nama di sidebar
+            add(DocumentsContract.Root.COLUMN_TITLE, "IDEku") // Nama di sidebar
             add(DocumentsContract.Root.COLUMN_SUMMARY, "Internal Isolated Home")
             add(DocumentsContract.Root.COLUMN_FLAGS, flags)
             add(DocumentsContract.Root.COLUMN_MIME_TYPES, "*/*")
-            add(DocumentsContract.Root.COLUMN_ICON, R.mipmap.ic_launcher)
+            add(DocumentsContract.Root.COLUMN_ICON, R.drawable.ic_launcher_foreground)
         }
         return matrix
     }
@@ -115,7 +115,7 @@ class FileProvider : DocumentsProvider() {
         }
 
         val displayName = if (file.absolutePath == File(context?.filesDir, "home").absolutePath) {
-            "Nasa-IDE"
+            "IDEku"
         } else {
             file.name
         }

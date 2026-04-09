@@ -12,6 +12,7 @@
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.MANAGE_DOCUMENTS" 
         tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="ndroid.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
