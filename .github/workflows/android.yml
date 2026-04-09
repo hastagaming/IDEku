@@ -94,50 +94,57 @@ jobs:
       - name: Grant Permissions
         run: chmod +x gradlew
 
-      - name: Build Project
+      - name: Build All Variants
         run: ./gradlew clean assembleRelease --no-daemon
 
-      - name: Manual Sign & Zipalign APK (Absolute Force)
+      - name: Manual Sign & Zipalign APK (Diagnostic & Force)
         run: |
-          # 1. Definisikan jalur absolut agar tidak ada miskomunikasi
-          BUNKER="$GITHUB_WORKSPACE/bunker_zone"
-          mkdir -p "$BUNKER"
-          rm -rf "$BUNKER"/*
+          # 1. Bersihkan area kerja
+          rm -f input.apk aligned-temp.apk IDEku-Final.apk release.jks
           
-          # 2. Cari Tools
-          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
-          APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
+          # 2. CARI TOOLS (Taktik Agresif)
+          # Kita cari di folder build-tools dan ambil yang versinya paling tinggi secara manual
+          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
+          ZIPALIGN="$BUILD_TOOLS_DIR/zipalign"
+          APKSIGNER="$BUILD_TOOLS_DIR/apksigner"
 
-          # 3. Kunci Target (Gunakan jalur absolut)
-          # Ambil 1 file saja, tanpa wildcard bintang yang merusak shell
-          TARGET_FILE=$(find "$GITHUB_WORKSPACE/app/build/outputs/apk/release" -name "*.apk" -type f | head -n 1)
+          echo "DEBUG: Menggunakan Build-Tools dari: $BUILD_TOOLS_DIR"
+          
+          # 3. VERIFIKASI TOOLS
+          if [ ! -f "$ZIPALIGN" ]; then echo "ERROR: Zipalign tidak ditemukan di $ZIPALIGN"; exit 1; fi
+          if [ ! -f "$APKSIGNER" ]; then echo "ERROR: Apksigner tidak ditemukan di $APKSIGNER"; exit 1; fi
+
+          # 4. KUNCI TARGET APK
+          # Kita cari APK di manapun dia berada di dalam folder app/build
+          TARGET_FILE=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -n 1)
           
           if [ -z "$TARGET_FILE" ]; then
-            echo "ERROR: APK tidak ditemukan di folder build!"
+            echo "ERROR: Gradle gagal membuat APK. Cek log Build Project di atas!"
             exit 1
           fi
-          
-          # Salin ke bunker
-          cp "$TARGET_FILE" "$BUNKER/raw.apk"
+          echo "DEBUG: Target ditemukan -> $TARGET_FILE"
+          cp "$TARGET_FILE" input.apk
 
-          # 4. Buat Keystore langsung di bunker (Gunakan opsi -d untuk decode yang bersih)
-          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > "$BUNKER/release.jks"
+          # 5. SIAPKAN KEYSTORE
+          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
+          if [ ! -s release.jks ]; then echo "ERROR: Keystore kosong! Cek Secret SIGNING_KEY"; exit 1; fi
 
-          # 5. Eksekusi Zipalign dengan Path Absolut
-          "$ZIPALIGN" -f -v 4 "$BUNKER/raw.apk" "$BUNKER/aligned.apk"
+          # 6. EKSEKUSI ZIPALIGN
+          echo "Menjalankan Zipalign..."
+          "$ZIPALIGN" -f -v 4 input.apk aligned-temp.apk
 
-          # 6. Eksekusi Signing dengan Path Absolut
-          # Kita gunakan file jks yang baru saja dibuat di dalam bunker
-          "$APKSIGNER" sign --ks "$BUNKER/release.jks" \
+          # 7. EKSEKUSI SIGNING
+          echo "Menjalankan Apksigner..."
+          "$APKSIGNER" sign --ks release.jks \
             --ks-key-alias "${{ secrets.ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-            --out "$GITHUB_WORKSPACE/IDEku-Final.apk" \
-            "$BUNKER/aligned.apk"
+            --out IDEku-Final.apk \
+            aligned-temp.apk
 
-          # 7. Verifikasi
-          "$APKSIGNER" verify "$GITHUB_WORKSPACE/IDEku-Final.apk"
-          echo "BERHASIL: IDEku-Final.apk sudah mendarat di root!"
+          # 8. VERIFIKASI AKHIR
+          "$APKSIGNER" verify IDEku-Final.apk
+          echo "MISI SUKSES: IDEku-Final.apk telah lahir!"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
