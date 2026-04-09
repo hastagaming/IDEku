@@ -111,6 +111,7 @@ class MainActivity : AppCompatActivity() {
             override fun onTerminalCursorStateChange(state: Boolean) {}
             // FIX: Tambahkan ini agar tidak error "not abstract"
             override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
+            override fun getTerminalCursorStyle(): Int { return 0 }
         }
 
         // Inisialisasi Session (FIX: Tambahkan parameter '0' sebagai p5)
