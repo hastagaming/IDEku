@@ -112,6 +112,7 @@ class MainActivity : AppCompatActivity() {
             // FIX: Tambahkan ini agar tidak error "not abstract"
             override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
             override fun logStackTrace(tag: String?, e: Exception?) {}
+            override fun logStackTraceWithMessage(tag: String?, message: String?, e: Exception?) {}
             override fun logVerbose(tag: String?, message: String?) {}
             override fun logDebug(tag: String?, message: String?) {}
             override fun logInfo(tag: String?, message: String?) {}
