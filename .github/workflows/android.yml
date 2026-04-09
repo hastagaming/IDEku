@@ -64,18 +64,21 @@ jobs:
           name: IDEku-Debug-Unsigned
           path: app/build/outputs/apk/debug/*.apk
 
-      - name: Fix Android Build Tools Path
+      - name: Force Fix Build Tools Path
         run: |
-          # Temukan versi build-tools terbaru yang ada di runner
-          LATEST_VERSION=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
-          echo "Menggunakan Build Tools Versi: $LATEST_VERSION sebagai pengganti 29.0.3"
+          # Cari di mana letak asli build-tools
+          REAL_PATH=$(find $ANDROID_HOME/build-tools -name "zipalign" | head -n 1 | xargs dirname)
+          echo "Ditemukan build-tools di: $REAL_PATH"
           
-          # Buat folder 29.0.3 palsu yang mengarah ke versi terbaru
-          sudo mkdir -p /usr/local/lib/android/sdk/build-tools
-          sudo ln -s $ANDROID_HOME/build-tools/$LATEST_VERSION /usr/local/lib/android/sdk/build-tools/29.0.3
+          # Target folder yang diminta oleh action signing
+          TARGET_DIR="/usr/local/lib/android/sdk/build-tools/29.0.3"
           
-          # Pastikan zipalign bisa dieksekusi
-          sudo chmod +x /usr/local/lib/android/sdk/build-tools/29.0.3/zipalign
+          # Gunakan sudo untuk membuat direktori dan link
+          sudo mkdir -p $(dirname $TARGET_DIR)
+          sudo ln -sfn $REAL_PATH $TARGET_DIR
+          
+          # Verifikasi keberadaan zipalign di jalur palsu
+          ls -l $TARGET_DIR/zipalign
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
