@@ -39,13 +39,13 @@ jobs:
           apply plugin: 'maven-publish'
 
           android {
-              # Menggunakan namespace yang konsisten dengan kode NASA-IDE
+              // Menggunakan namespace yang konsisten dengan kode NASA-IDE
               namespace "com.termux.terminal"
 
-              # Menggunakan nilai tetap agar tidak error saat di GitHub Actions
+              // Menggunakan nilai tetap agar tidak error saat di GitHub Actions
               compileSdk 34
               
-              # Gunakan NDK default dari runner atau pasang manual jika perlu
+              // Gunakan NDK default dari runner atau pasang manual jika perlu
               ndkVersion "26.1.10909125"
 
               defaultConfig {
@@ -91,7 +91,7 @@ jobs:
               testImplementation "junit:junit:4.13.2"
           }
 
-          # Penyesuaian Publikasi agar kompatibel dengan GitHub Runner
+          // Penyesuaian Publikasi agar kompatibel dengan GitHub Runner
           afterEvaluate {
               publishing {
                   publications {
