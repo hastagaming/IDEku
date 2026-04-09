@@ -111,6 +111,9 @@ class MainActivity : AppCompatActivity() {
             override fun onTerminalCursorStateChange(state: Boolean) {}
             // FIX: Tambahkan ini agar tidak error "not abstract"
             override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
+            override fun logStackTrace(tag: String?, e: Exception?) {}
+            override fun logVerbose(tag: String?, message: String?) {}
+            override fun logDebug(tag: String?, message: String?) {}
             override fun logInfo(tag: String?, message: String?) {}
             override fun logWarn(tag: String?, message: String?) {}
             override fun getTerminalCursorStyle(): Int { return 0 }
