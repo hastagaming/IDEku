@@ -97,57 +97,50 @@ jobs:
       - name: Build Project
         run: ./gradlew clean assembleRelease --no-daemon
 
-      - name: Manual Sign & Zipalign APK
+      - name: Manual Sign & Zipalign APK (Bunker Mode)
         run: |
-          # 1. Bersihkan medan tempur total
-          rm -f input.apk aligned-temp.apk IDEku-Final.apk release.jks
+          # 1. Siapkan Bunker (Direktori Terisolasi)
+          mkdir -p bunker_zone
+          rm -rf bunker_zone/*
           
-          # 2. Amankan Tools
+          # 2. Amankan Tools (Zipalign & Apksigner)
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
 
-          # 3. TAKTIK FILTER MUTLAK: Ambil semua list, potong paksa, ambil baris pertama saja
-          # Ini menjamin 1000% variabel SELECTED_APK hanya berisi SATU nama file
-          SELECTED_APK=$(ls app/build/outputs/apk/release/*.apk 2>/dev/null | head -n 1)
+          # 3. Amankan Target: Ambil TEPAT SATU APK hasil build
+          # Kita gunakan find agar tidak error jika wildcard gagal
+          TARGET_FILE=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -n 1)
           
-          # Fallback jika ada di dalam sub-folder
-          if [ -z "$SELECTED_APK" ]; then
-            SELECTED_APK=$(ls app/build/outputs/apk/release/*/*.apk 2>/dev/null | head -n 1)
-          fi
-
-          if [ -z "$SELECTED_APK" ]; then
-            echo "ERROR: Gradle sama sekali tidak menghasilkan file APK!"
+          if [ -z "$TARGET_FILE" ]; then
+            echo "ERROR: APK tidak ditemukan di folder build!"
             exit 1
           fi
-
-          echo "Target terkunci sempurna pada: $SELECTED_APK"
-
-          # 4. Salin satu file tersebut menjadi input.apk
-          # Karena SELECTED_APK PASTI HANYA SATU, perintah cp tidak akan pernah error
-          cp "$SELECTED_APK" input.apk
           
-          if [ ! -f "input.apk" ]; then
-            echo "ERROR: Proses isolasi file gagal!"
-            exit 1
-          fi
+          # Salin ke bunker dengan nama statis agar tidak ada spasi/karakter aneh
+          cp "$TARGET_FILE" bunker_zone/raw.apk
+          echo "Target berhasil diamankan ke bunker: $TARGET_FILE"
 
-          # 5. Siapkan Keystore
-          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
+          # 4. Siapkan Keystore di dalam bunker
+          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > bunker_zone/release.jks
 
-          # 6. Zipalign (Input tunggal yang sudah dipastikan: input.apk)
-          "$ZIPALIGN" -f -v 4 input.apk aligned-temp.apk
-
-          # 7. Signing
+          # 5. Eksekusi di dalam Bunker
+          cd bunker_zone
+          
+          # Langkah A: Zipalign (Input & Output sangat spesifik)
+          "$ZIPALIGN" -f -v 4 raw.apk aligned.apk
+          
+          # Langkah B: Signing (Output langsung dilempar ke root workspace)
           "$APKSIGNER" sign --ks release.jks \
             --ks-key-alias "${{ secrets.ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-            --out IDEku-Final.apk \
-            aligned-temp.apk
+            --out ../IDEku-Final.apk \
+            aligned.apk
 
-          # 8. Verifikasi
+          # 6. Verifikasi Akhir
+          cd ..
           "$APKSIGNER" verify IDEku-Final.apk
-          echo "MISI SELESAI: IDEku-Final.apk berhasil lolos dari neraka error."
+          echo "OPERASI SELESAI: IDEku-Final.apk mendarat dengan selamat."
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
