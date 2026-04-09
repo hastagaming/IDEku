@@ -89,7 +89,7 @@ class IDEkuService : Service() {
             .setSmallIcon(android.R.drawable.ic_dialog_info) // Menggunakan ikon sistem sesuai request Komandan
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
-            .addAction(android.R.drawable.ic_lock_idle_low_power, wakeLockStatus, wakePendingIntent)
+            .addAction(R.drawable.ic_lock_idle_low_power, wakeLockStatus, wakePendingIntent)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Exit", stopPendingIntent)
             .build()
     }
