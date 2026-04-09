@@ -64,6 +64,19 @@ jobs:
           name: IDEku-Debug-Unsigned
           path: app/build/outputs/apk/debug/*.apk
 
+      - name: Fix Android Build Tools Path
+        run: |
+          # Temukan versi build-tools terbaru yang ada di runner
+          LATEST_VERSION=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
+          echo "Menggunakan Build Tools Versi: $LATEST_VERSION sebagai pengganti 29.0.3"
+          
+          # Buat folder 29.0.3 palsu yang mengarah ke versi terbaru
+          sudo mkdir -p /usr/local/lib/android/sdk/build-tools
+          sudo ln -s $ANDROID_HOME/build-tools/$LATEST_VERSION /usr/local/lib/android/sdk/build-tools/29.0.3
+          
+          # Pastikan zipalign bisa dieksekusi
+          sudo chmod +x /usr/local/lib/android/sdk/build-tools/29.0.3/zipalign
+
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
         with:
@@ -72,9 +85,6 @@ jobs:
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
-          env:
-          # TAMBAHKAN BARIS DI BAWAH INI
-          BUILD_TOOLS_VERSION: "34.0.0"
 
       - name: Create Release (Full Auto)
         uses: softprops/action-gh-release@v1
