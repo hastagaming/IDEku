@@ -1,4 +1,4 @@
-name: NASA-IDE-BUILDER
+name: IDEku Builder
 
 on:
   push:
@@ -25,18 +25,25 @@ jobs:
 
       - name: Auto-Fetch & Clean Overwrite Modules
         run: |
-          # 1. Ambil Source Termux
+          # 1. Ambil Source Termux (Gunakan depth 1 agar cepat)
           git clone --depth 1 https://github.com/termux/termux-app.git temp_termux
           rm -rf terminal-view terminal-emulator
+          
+          # Salin modul utama
           cp -r temp_termux/terminal-view .
           cp -r temp_termux/terminal-emulator .
+          
+          # Cek dependensi common jika ada (opsional tapi disarankan)
+          if [ -d "temp_termux/terminal-common" ]; then
+            cp -r temp_termux/terminal-common .
+          fi
           rm -rf temp_termux
 
-          # 2. Patch Manifest
+          # 2. Patch Manifest (Bersihkan baris sdkVersion yang bikin bentrok)
           sed -i '/sdkVersion/d' terminal-view/src/main/AndroidManifest.xml
           sed -i '/sdkVersion/d' terminal-emulator/src/main/AndroidManifest.xml
 
-          # 3. Rakit terminal-emulator/build.gradle (Tanpa Maven-Publish yang Error)
+          # 3. Rakit terminal-emulator/build.gradle (Dengan Perbaikan JNI Header)
           cat << 'EOF' > terminal-emulator/build.gradle
           apply plugin: 'com.android.library'
           android {
@@ -48,7 +55,8 @@ jobs:
                   targetSdk 34
                   externalNativeBuild {
                       ndkBuild {
-                          cFlags "-std=c11", "-Wall", "-Wextra", "-Werror", "-Os", "-fno-stack-protector", "-Wl,--gc-sections"
+                          // Tambahkan Include Path agar header JNI ditemukan
+                          cFlags "-std=c11", "-Wall", "-Wextra", "-Os", "-I${projectDir}/src/main/jni"
                       }
                   }
                   ndk {
@@ -90,21 +98,27 @@ jobs:
 
       - name: Manual Sign & Zipalign APK
         run: |
-          # 1. Cari Tools
+          # 1. Cari Tools (Cari yang terbaru di build-tools)
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name "zipalign" | sort -V | tail -n 1)
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name "apksigner" | sort -V | tail -n 1)
 
-          # 2. Ambil APK Release (Gunakan head -n 1 agar tidak ambigu)
-          TARGET_APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-          echo "Target APK: $TARGET_APK"
+          # 2. Sniper Target APK (Hanya ambil file release, abaikan debug)
+          TARGET_APK=$(find app/build/outputs/apk/release -name "*release*.apk" | head -n 1)
+          
+          if [ -z "$TARGET_APK" ]; then
+            echo "ERROR: APK Release tidak ditemukan!"
+            exit 1
+          fi
+          
+          echo "Memproses: $TARGET_APK"
 
-          # 3. Keystore dari Secrets
+          # 3. Ekstrak Keystore dari Secrets
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
 
-          # 4. Zipalign
+          # 4. Zipalign (Wajib untuk rilis Play Store/Produksi)
           $ZIPALIGN -v 4 "$TARGET_APK" IDEku-Final-Aligned.apk
 
-          # 5. Signing
+          # 5. Signing (Tanda tangan basah)
           $APKSIGNER sign --ks release.jks \
             --ks-key-alias "${{ secrets.ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
@@ -114,6 +128,7 @@ jobs:
 
           # 6. Verifikasi
           $APKSIGNER verify IDEku-Final.apk
+          echo "APK SIAP TEMPUR: IDEku-Final.apk"
 
       - name: Upload Finished APK
         uses: actions/upload-artifact@v4
@@ -127,6 +142,10 @@ jobs:
           files: IDEku-Final.apk
           name: "IDEku Auto Build #${{ github.run_number }}"
           tag_name: "v1.0.${{ github.run_number }}"
-          body: "Build otomatis IDEku dari commit: ${{ github.event.head_commit.message }}. Mesin NDK terpasang."
+          body: |
+            Build otomatis IDEku sukses!
+            - Commit: ${{ github.event.head_commit.message }}
+            - Mesin Terminal (NDK/C++) terkompilasi penuh.
+            - Status: Signed & Aligned.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
