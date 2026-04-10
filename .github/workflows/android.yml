@@ -97,54 +97,58 @@ jobs:
       - name: Build All Variants
         run: ./gradlew clean assembleRelease --no-daemon
 
-      - name: Manual Sign & Zipalign APK (Diagnostic & Force)
+      - name: Manual Sign & Zipalign APK (The Highlander Tactic)
         run: |
-          # 1. Bersihkan area kerja
-          rm -f input.apk aligned-temp.apk IDEku-Final.apk release.jks
+          # 1. Bersihkan sisa-sisa perang
+          rm -f *.apk *.jks release.jks input.apk aligned.apk
           
-          # 2. CARI TOOLS (Taktik Agresif)
-          # Kita cari di folder build-tools dan ambil yang versinya paling tinggi secara manual
-          BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
-          ZIPALIGN="$BUILD_TOOLS_DIR/zipalign"
-          APKSIGNER="$BUILD_TOOLS_DIR/apksigner"
+          # 2. Identifikasi Tools secara manual
+          # Kita ambil versi build-tools tertinggi yang tersedia
+          BT_PATH=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
+          ZIPALIGN="$BT_PATH/zipalign"
+          APKSIGNER="$BT_PATH/apksigner"
+          
+          echo "DEBUG: Menggunakan tools dari $BT_PATH"
 
-          echo "DEBUG: Menggunakan Build-Tools dari: $BUILD_TOOLS_DIR"
+          # 3. TAKTIK HIGHLANDER: Cari semua APK, tapi HAPUS semua kecuali satu
+          # Kita pindah ke folder output dulu agar shell tidak bingung dengan path panjang
+          cd app/build/outputs/apk/release/
           
-          # 3. VERIFIKASI TOOLS
-          if [ ! -f "$ZIPALIGN" ]; then echo "ERROR: Zipalign tidak ditemukan di $ZIPALIGN"; exit 1; fi
-          if [ ! -f "$APKSIGNER" ]; then echo "ERROR: Apksigner tidak ditemukan di $APKSIGNER"; exit 1; fi
-
-          # 4. KUNCI TARGET APK
-          # Kita cari APK di manapun dia berada di dalam folder app/build
-          TARGET_FILE=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -n 1)
+          # Ambil nama satu file APK yang paling valid
+          TARGET_APK=$(ls *.apk | head -n 1)
           
-          if [ -z "$TARGET_FILE" ]; then
-            echo "ERROR: Gradle gagal membuat APK. Cek log Build Project di atas!"
+          if [ -z "$TARGET_APK" ]; then
+            echo "ERROR: Tidak ada APK yang ditemukan di folder release!"
             exit 1
           fi
-          echo "DEBUG: Target ditemukan -> $TARGET_FILE"
-          cp "$TARGET_FILE" input.apk
+          
+          echo "DEBUG: Mengunci target tunggal -> $TARGET_APK"
+          
+          # Pindahkan ke root workspace dengan nama yang sangat sederhana
+          cp "$TARGET_APK" "$GITHUB_WORKSPACE/input.apk"
+          
+          # Kembali ke root workspace
+          cd "$GITHUB_WORKSPACE"
 
-          # 5. SIAPKAN KEYSTORE
+          # 4. Siapkan Keystore
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
-          if [ ! -s release.jks ]; then echo "ERROR: Keystore kosong! Cek Secret SIGNING_KEY"; exit 1; fi
+          if [ ! -s release.jks ]; then echo "ERROR: Keystore gagal dibuat!"; exit 1; fi
 
-          # 6. EKSEKUSI ZIPALIGN
-          echo "Menjalankan Zipalign..."
-          "$ZIPALIGN" -f -v 4 input.apk aligned-temp.apk
+          # 5. Eksekusi Zipalign (Hanya pada 1 file pasti: input.apk)
+          "$ZIPALIGN" -f -v 4 input.apk aligned.apk
 
-          # 7. EKSEKUSI SIGNING
-          echo "Menjalankan Apksigner..."
+          # 6. Eksekusi Signing (Hanya pada 1 file pasti: aligned.apk)
+          # Baris ini yang tadinya error di 1129, sekarang foldernya bersih
           "$APKSIGNER" sign --ks release.jks \
             --ks-key-alias "${{ secrets.ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
             --out IDEku-Final.apk \
-            aligned-temp.apk
+            aligned.apk
 
-          # 8. VERIFIKASI AKHIR
+          # 7. Verifikasi
           "$APKSIGNER" verify IDEku-Final.apk
-          echo "MISI SUKSES: IDEku-Final.apk telah lahir!"
+          echo "AKHIRNYA! Misi selesai, Komandan Nasa!"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
