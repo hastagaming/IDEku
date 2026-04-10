@@ -12,6 +12,7 @@ import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -57,10 +58,11 @@ class MainActivity : AppCompatActivity() {
         // 2. Jalankan Terminal
         startTerminalWithBootstrap()
 
+        // 3. Cek Izin & Load File
         checkStoragePermission()
         loadDirectory(homeDir)
 
-        // 3. Panggil setup extra keys
+        // 4. Panggil setup extra keys
         setupExtraKeys()
     }
 
@@ -99,7 +101,6 @@ class MainActivity : AppCompatActivity() {
             "PATH=${binDir.absolutePath}:${System.getenv("PATH")}"
         )
 
-        // Setup Client dengan semua metode yang diwajibkan oleh Modul Lokal
         val sessionClient = object : TerminalSessionClient {
             override fun onTextChanged(session: TerminalSession) { terminalView.onScreenUpdated() }
             override fun onSessionFinished(session: TerminalSession) { finish() }
@@ -109,7 +110,6 @@ class MainActivity : AppCompatActivity() {
             override fun onColorsChanged(session: TerminalSession) {}
             override fun onTitleChanged(session: TerminalSession) {}
             override fun onTerminalCursorStateChange(state: Boolean) {}
-            // FIX: Tambahkan ini agar tidak error "not abstract"
             override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
             override fun logStackTrace(tag: String?, e: Exception?) {}
             override fun logStackTraceWithMessage(tag: String?, message: String?, e: Exception?) {}
@@ -121,13 +121,12 @@ class MainActivity : AppCompatActivity() {
             override fun logError(tag: String?, message: String?) {}
         }
 
-        // Inisialisasi Session (FIX: Tambahkan parameter '0' sebagai p5)
         terminalSession = TerminalSession(
             shellPath,
             workingDir,
             null, 
             env,
-            0, // Parameter integer yang diminta library
+            0, 
             sessionClient
         )
 
@@ -175,7 +174,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Fungsi setupIsolatedEnv, deployAssets, dll tetap sama seperti sebelumnya
     private fun setupIsolatedEnv() {
         binDir = File(filesDir, "usr/bin")
         homeDir = File(filesDir.parentFile, "home")
@@ -229,12 +227,21 @@ class MainActivity : AppCompatActivity() {
         terminalSession?.write("bw build --dir $projectPath\n")
     }
 
+    // --- FUNGSI PERMISSION YANG SUDAH DIGABUNG ---
     private fun checkStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                intent.data = Uri.parse("package:$packageName")
-                startActivity(intent)
+                AlertDialog.Builder(this)
+                    .setTitle("Butuh Akses File")
+                    .setMessage("IDEku butuh izin akses memori agar bisa menyimpan project coding Komandan. Izinkan di halaman berikutnya ya!")
+                    .setCancelable(false) // User harus pilih "Siap!"
+                    .setPositiveButton("Siap!") { _, _ ->
+                        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                        val uri = Uri.fromParts("package", packageName, null)
+                        intent.data = uri
+                        startActivity(intent)
+                    }
+                    .show()
             }
         }
     }
