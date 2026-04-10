@@ -16,6 +16,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      APP_VERSION: "1.0.${{ github.run_number }}"
+      FINAL_APK_NAME: "IDEku-1.0.${{ github.run_number }}.apk"
+
     steps:
       - name: Clone Repo
         uses: actions/checkout@v4
@@ -97,69 +101,48 @@ jobs:
       - name: Build All Variants
         run: ./gradlew clean assembleRelease --no-daemon
 
-      - name: Manual Sign & Zipalign APK (The Highlander Tactic)
+      - name: Manual Sign & Zipalign APK (Bunker Java Mode)
         run: |
-          # 1. Bersihkan sisa-sisa perang
-          rm -f *.apk *.jks release.jks input.apk aligned.apk
+          # 1. Siapkan Bunker
+          mkdir -p bunker
           
-          # 2. Identifikasi Tools secara manual
-          # Kita ambil versi build-tools tertinggi yang tersedia
+          # 2. Identifikasi Tools (Bypass Script Wrapper)
           BT_PATH=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
           ZIPALIGN="$BT_PATH/zipalign"
-          APKSIGNER="$BT_PATH/apksigner"
-          
-          echo "DEBUG: Menggunakan tools dari $BT_PATH"
+          APKSIGNER_JAR="$BT_PATH/lib/apksigner.jar"
 
-          # 3. TAKTIK HIGHLANDER: Cari semua APK, tapi HAPUS semua kecuali satu
-          # Kita pindah ke folder output dulu agar shell tidak bingung dengan path panjang
-          cd app/build/outputs/apk/release/
-          
-          # Ambil nama satu file APK yang paling valid
-          TARGET_APK=$(ls *.apk | head -n 1)
-          
-          if [ -z "$TARGET_APK" ]; then
-            echo "ERROR: Tidak ada APK yang ditemukan di folder release!"
-            exit 1
-          fi
-          
-          echo "DEBUG: Mengunci target tunggal -> $TARGET_APK"
-          
-          # Pindahkan ke root workspace dengan nama yang sangat sederhana
-          cp "$TARGET_APK" "$GITHUB_WORKSPACE/input.apk"
-          
-          # Kembali ke root workspace
-          cd "$GITHUB_WORKSPACE"
+          # 3. Isolasi Target
+          TARGET=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -n 1)
+          cp "$TARGET" bunker/input.apk
 
-          # 4. Siapkan Keystore
-          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
-          if [ ! -s release.jks ]; then echo "ERROR: Keystore gagal dibuat!"; exit 1; fi
+          # 4. Keystore
+          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > bunker/release.jks
 
-          # 5. Eksekusi Zipalign (Hanya pada 1 file pasti: input.apk)
-          "$ZIPALIGN" -f -v 4 input.apk aligned.apk
+          # 5. Zipalign
+          "$ZIPALIGN" -f -v 4 bunker/input.apk bunker/aligned.apk
 
-          # 6. Eksekusi Signing (Hanya pada 1 file pasti: aligned.apk)
-          # Baris ini yang tadinya error di 1129, sekarang foldernya bersih
-          "$APKSIGNER" sign --ks release.jks \
-            --ks-key-alias "${{ secrets.ALIAS }}" \
-            --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
-            --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-            --out IDEku-Final.apk \
-            aligned.apk
+          # 6. Signing (Menggunakan Nama File Dinamis)
+          # Kita simpan di root agar bisa dibaca oleh step Release
+          java -jar "$APKSIGNER_JAR" sign \
+            --ks bunker/release.jks \
+            --ks-key-alias '${{ secrets.ALIAS }}' \
+            --ks-pass pass:'${{ secrets.KEY_STORE_PASSWORD }}' \
+            --key-pass pass:'${{ secrets.KEY_PASSWORD }}' \
+            --out "${{ env.FINAL_APK_NAME }}" \
+            bunker/aligned.apk
 
-          # 7. Verifikasi
-          "$APKSIGNER" verify IDEku-Final.apk
-          echo "AKHIRNYA! Misi selesai, Komandan Nasa!"
+          echo "DEBUG: File ${{ env.FINAL_APK_NAME }} berhasil dibuat."
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: IDEku-Final.apk
-          name: "IDEku Build v1.0.${{ github.run_number }}"
-          tag_name: "v1.0.${{ github.run_number }}"
+          files: "${{ env.FINAL_APK_NAME }}"
+          name: "IDEku-Build-v${{ env.APP_VERSION }}"
+          tag_name: "v${{ env.APP_VERSION }}"
           body: |
             ### 🚀 NASA-IDE Build Success!
-            - **Commit:** `${{ github.sha }}`
-            - **Status:** Signed, Zipaligned, & NDK-Enabled.
+            - **Versi:** `${{ env.APP_VERSION }}`
+            - **Status:** Signed & Zipaligned.
           draft: false
           prerelease: false
         env:
