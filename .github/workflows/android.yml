@@ -101,18 +101,20 @@ jobs:
       - name: Build All Variants
         run: ./gradlew clean assembleRelease --no-daemon
 
-      - name: Manual Sign & Zipalign APK (Bunker Java Mode)
+      - name: Manual Sign & Zipalign APK (Safe Name Mode)
         run: |
-          # 1. Siapkan Bunker
+          # 1. Bersihkan bunker
           mkdir -p bunker
+          rm -rf bunker/*
           
-          # 2. Identifikasi Tools (Bypass Script Wrapper)
+          # 2. Identifikasi Tools (Bypass Wrapper)
           BT_PATH=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
           ZIPALIGN="$BT_PATH/zipalign"
           APKSIGNER_JAR="$BT_PATH/lib/apksigner.jar"
 
-          # 3. Isolasi Target
+          # 3. Kunci Target
           TARGET=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -n 1)
+          if [ -z "$TARGET" ]; then echo "ERROR: APK tidak ditemukan!"; exit 1; fi
           cp "$TARGET" bunker/input.apk
 
           # 4. Keystore
@@ -121,17 +123,19 @@ jobs:
           # 5. Zipalign
           "$ZIPALIGN" -f -v 4 bunker/input.apk bunker/aligned.apk
 
-          # 6. Signing (Menggunakan Nama File Dinamis)
-          # Kita simpan di root agar bisa dibaca oleh step Release
+          # 6. SIGNING (Menggunakan Nama File Baru)
+          # Tanda kutip tetap digunakan untuk berjaga-jaga jika ada spasi gaib
           java -jar "$APKSIGNER_JAR" sign \
             --ks bunker/release.jks \
-            --ks-key-alias '${{ secrets.ALIAS }}' \
-            --ks-pass pass:'${{ secrets.KEY_STORE_PASSWORD }}' \
-            --key-pass pass:'${{ secrets.KEY_PASSWORD }}' \
+            --ks-key-alias "${{ secrets.ALIAS }}" \
+            --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
+            --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
             --out "${{ env.FINAL_APK_NAME }}" \
             bunker/aligned.apk
 
-          echo "DEBUG: File ${{ env.FINAL_APK_NAME }} berhasil dibuat."
+          # 7. Verifikasi
+          java -jar "$APKSIGNER_JAR" verify "${{ env.FINAL_APK_NAME }}"
+          echo "BERHASIL: ${{ env.FINAL_APK_NAME }} telah siap di root workspace."
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
