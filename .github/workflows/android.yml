@@ -101,41 +101,47 @@ jobs:
       - name: Build All Variants
         run: ./gradlew clean assembleRelease --no-daemon
 
-      - name: Manual Sign & Zipalign APK (Safe Name Mode)
+      - name: Manual Sign & Zipalign APK (Ultimate Env Shield)
+        # KITA PINDAHKAN SEMUA SECRET KE DALAM ENVIRONMENT (SANGAT AMAN)
+        env:
+          ALIAS_NAME: ${{ secrets.ALIAS }}
+          KS_PASS: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+          BASE64_KEY: ${{ secrets.SIGNING_KEY }}
         run: |
-          # 1. Bersihkan bunker
+          # 1. Siapkan Bunker
           mkdir -p bunker
           rm -rf bunker/*
           
-          # 2. Identifikasi Tools (Bypass Wrapper)
+          # 2. Amankan Tools
           BT_PATH=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -n 1)
           ZIPALIGN="$BT_PATH/zipalign"
           APKSIGNER_JAR="$BT_PATH/lib/apksigner.jar"
 
-          # 3. Kunci Target
+          # 3. Kunci Target APK
           TARGET=$(find app/build/outputs/apk/release -name "*.apk" -type f | head -n 1)
           if [ -z "$TARGET" ]; then echo "ERROR: APK tidak ditemukan!"; exit 1; fi
           cp "$TARGET" bunker/input.apk
 
-          # 4. Keystore
-          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > bunker/release.jks
+          # 4. Decode Keystore dengan Aman (Mengabaikan karakter enter/spasi gaib)
+          echo "$BASE64_KEY" | tr -d '\n\r ' | base64 -d > bunker/release.jks
 
           # 5. Zipalign
           "$ZIPALIGN" -f -v 4 bunker/input.apk bunker/aligned.apk
 
-          # 6. SIGNING (Menggunakan Nama File Baru)
-          # Tanda kutip tetap digunakan untuk berjaga-jaga jika ada spasi gaib
+          # 6. SIGNING (ANTI-BOCOR)
+          # Menggunakan 'env:NAMA_VARIABEL' agar apksigner membaca password sendiri di latar belakang
           java -jar "$APKSIGNER_JAR" sign \
             --ks bunker/release.jks \
-            --ks-key-alias "${{ secrets.ALIAS }}" \
-            --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
-            --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-            --out "${{ env.FINAL_APK_NAME }}" \
+            --ks-key-alias "$ALIAS_NAME" \
+            --ks-pass "env:KS_PASS" \
+            --key-pass "env:KEY_PASS" \
+            --out "$FINAL_APK_NAME" \
             bunker/aligned.apk
 
           # 7. Verifikasi
-          java -jar "$APKSIGNER_JAR" verify "${{ env.FINAL_APK_NAME }}"
-          echo "BERHASIL: ${{ env.FINAL_APK_NAME }} telah siap di root workspace."
+          java -jar "$APKSIGNER_JAR" verify "$FINAL_APK_NAME"
+          echo "BERHASIL: $FINAL_APK_NAME siap rilis!"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
