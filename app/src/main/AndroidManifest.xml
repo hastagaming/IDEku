@@ -50,6 +50,7 @@
 
        <service 
            android:name=".IDEkuService"
+           android:exported="false"
            android:foregroundServiceType="specialUse">
            <property 
                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" 
