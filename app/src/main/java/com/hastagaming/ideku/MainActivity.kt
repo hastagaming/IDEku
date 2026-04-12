@@ -88,7 +88,7 @@ class MainActivity : AppCompatActivity() {
             initUI()
             setupIsolatedEnv()
             deployAssets()
-            startTerminalWithBootstrap()
+         // startTerminalWithBootstrap()
             loadDirectory(homeDir)
             setupExtraKeys()
         } catch (e: Exception) {
