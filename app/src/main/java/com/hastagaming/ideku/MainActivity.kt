@@ -50,21 +50,63 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 1. Inisialisasi UI & Folder
-        initUI()
-        setupIsolatedEnv()
-        deployAssets() 
-
-        // 2. Jalankan Terminal
-        startTerminalWithBootstrap()
-
-        // 3. Cek Izin & Load File
-        checkStoragePermission()
-        loadDirectory(homeDir)
-
-        // 4. Panggil setup extra keys
-        setupExtraKeys()
+        // 1. CEK IZIN TERLEBIH DAHULU
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
+                // Jika belum ada izin, panggil fungsinya (JANGAN DIHAPUS)
+                checkStoragePermission() 
+            } else {
+                // Jika sudah ada izin, langsung gas sistem IDE
+                startSistemIde()
+             }
+         } else {
+             // Untuk Android di bawah 11, langsung jalankan
+             startSistemIde()
+         }
     }
+
+     // --- JANGAN DIHAPUS, TAPI MODIFIKASI ISINYA ---
+     private fun checkStoragePermission() {
+         AlertDialog.Builder(this)
+             .setTitle("Butuh Akses File")
+             .setMessage("IDEku butuh izin akses memori agar bisa menyimpan project coding Komandan. Izinkan di halaman berikutnya ya!")
+             .setCancelable(false)
+             .setPositiveButton("Siap!") { _, _ ->
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                val uri = Uri.fromParts("package", packageName, null)
+                intent.data = uri
+                startActivity(intent)
+                // CATATAN: Setelah user kembali dari Settings, 
+                // aplikasi biasanya akan restart dan masuk ke 'else' di onCreate.
+            }
+            .show()
+    }
+
+    // --- WADAH BARU UNTUK SEMUA INISIALISASI ---
+    private fun startSistemIde() {
+        try {
+            initUI()
+            setupIsolatedEnv()
+            deployAssets()
+            startTerminalWithBootstrap()
+            loadDirectory(homeDir)
+            setupExtraKeys()
+        } catch (e: Exception) {
+            // Jika masih ada crash, kita tangkap di sini agar aplikasi tidak tertutup paksa
+            Toast.makeText(this, "Gagal memuat sistem: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Jika user kembali dari Settings dan izin sudah diberikan, jalankan sistem
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager() && terminalSession == null) {
+                startSistemIde()
+            }
+        }
+    }
+
 
     private fun initUI() {
         editor = findViewById(R.id.codeEditor)
@@ -225,25 +267,6 @@ class MainActivity : AppCompatActivity() {
     private fun runBuildCommand() {
         val projectPath = currentDirectory?.absolutePath ?: homeDir.absolutePath
         terminalSession?.write("bw build --dir $projectPath\n")
-    }
-
-    // --- FUNGSI PERMISSION YANG SUDAH DIGABUNG ---
-    private fun checkStoragePermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                AlertDialog.Builder(this)
-                    .setTitle("Butuh Akses File")
-                    .setMessage("IDEku butuh izin akses memori agar bisa menyimpan project coding Komandan. Izinkan di halaman berikutnya ya!")
-                    .setCancelable(false) // User harus pilih "Siap!"
-                    .setPositiveButton("Siap!") { _, _ ->
-                        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-                        val uri = Uri.fromParts("package", packageName, null)
-                        intent.data = uri
-                        startActivity(intent)
-                    }
-                    .show()
-            }
-        }
     }
 
     private fun loadDirectory(directory: File) {
